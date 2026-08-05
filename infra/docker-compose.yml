@@ -1,0 +1,77 @@
+# Stos Asystenta PKB - serwer srv1469630 (187.124.30.210)
+# Wersjonowany, żeby dla kolejnego klubu odtworzyć całość jedną komendą.
+#
+# ŚWIADOME DECYZJE BEZPIECZEŃSTWA (z oficjalnej dokumentacji Hermesa, 2026-08-03):
+# 1. NIE montujemy /var/run/docker.sock. Dokumentacja opisuje to jako opcję ("opt in"),
+#    ale wtedy agent steruje silnikiem Dockera CAŁEGO serwera, a backendy kontenerowe
+#    pomijają warstwę zatwierdzania niebezpiecznych komend. To praktycznie ucieczka z kontenera.
+# 2. Agent NIE działa jako root. Oficjalny obraz zrzuca uprawnienia na użytkownika hermes
+#    (uid 10000) przez s6-setuidgid; katalog danych zostaje przez /init przepisany na ten uid.
+# 3. Obraz sam ustawia HERMES_WRITE_SAFE_ROOT=/opt/data, więc narzędzia zapisu plików
+#    nie wyjdą poza zamontowany wolumen.
+# 4. Port API servera bindowany WYŁĄCZNIE do 127.0.0.1. Do internetu wystawiona będzie
+#    tylko nasza aplikacja PKB, przez Caddy z HTTPS.
+# 5. Limity zasobów, żeby agent nie zagłodził aplikacji PKB na tej samej maszynie (2 vCPU / 8 GB).
+
+services:
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    container_name: hermes
+    restart: unless-stopped
+    command: ["gateway", "run"]
+    volumes:
+      - /root/hermes-data:/opt/data
+    ports:
+      # API server dla aplikacji PKB - tylko localhost, nigdy 0.0.0.0
+      - "127.0.0.1:8642:8642"
+      # API server profilu prezes-test
+      - "127.0.0.1:8643:8643"
+      # Panel webowy - TYLKO localhost, wchodzi sie tunelem SSH
+      - "127.0.0.1:9119:9119"
+    environment:
+      - TZ=Europe/Warsaw
+      - HERMES_DASHBOARD=1
+    # Pamięć współdzielona dla Chromium (automatyzacja przeglądarki przy researchu firm)
+    shm_size: "1gb"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "1.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Wlasna wyszukiwarka internetowa dla agenta.
+  # Powod: bez subskrypcji Nous Portal narzedzia web_search/web_extract wymagaja
+  # wlasnego backendu. SearXNG jest darmowy, chodzi na naszym serwerze, a zapytania
+  # o firmy czlonkow klubu nie wychodza do zewnetrznego dostawcy (argument RODO).
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+    volumes:
+      - /root/searxng:/etc/searxng
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080/
+      - TZ=Europe/Warsaw
+    # Brak sekcji ports: celowo. Dostepna tylko w sieci Dockera, nie z internetu.
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+# Dashboard (port 9119) NIE jest tu uruchamiany celowo: przy bindowaniu poza loopback
+# wymaga skonfigurowanego providera autoryzacji, inaczej sam się wyłącza przy starcie.
+# Dołożymy go osobno, za tunelem SSH albo z basic auth, gdy będzie potrzebny
+# (m.in. do wtyczki Hermes Achievements z panelem rozwoju agenta).
+#
+# Aplikacja PKB i Caddy dojdą do tego pliku w fazie 5 realizacji.

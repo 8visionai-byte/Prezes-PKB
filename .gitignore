@@ -1,0 +1,5 @@
+# Dane osobowe osób trzecich - NIE commitować
+dane-dyrektorow-PKB.md
+zrzuty-PKB/*.png
+*haslo*.txt
+*.env
