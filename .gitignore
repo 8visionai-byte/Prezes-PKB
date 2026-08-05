@@ -5,3 +5,4 @@ zrzuty-PKB/*.png
 *.env
 node_modules/
 .next/
+kopie-dns/

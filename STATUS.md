@@ -160,7 +160,31 @@ Aplikacja zbudowana i uruchomiona na serwerze, kod w `app/`.
 
 Repo GitHub: **https://github.com/8visionai-byte/Prezes-PKB** (dane osobowe i zrzuty wykluczone przez .gitignore).
 
+### PANEL PKB + NAPRAWA LINKÓW (2026-08-05)
+
+**Błąd z linkami był PO NASZEJ STRONIE, nie po stronie Hermesa.** Aplikacja renderowała
+odpowiedź jako `whitespace-pre-wrap`, czyli goły tekst, więc markdown od agenta nie zamieniał się
+w klikalne linki. Naprawione przez react-markdown + remark-gfm.
+**Zweryfikowane w przeglądarce**: `link "kipg.pl" href="https://kipg.pl"` jako prawdziwy element `<a>`.
+
+Design wg wzorca ze zrzutów portalu (pipeline: wzorzec -> budowa -> audyt impeccable):
+- lewy sidebar 264 px z logo, kartą użytkownika (Radosław Rogiewicz, Prezes PKB) i grupami sekcji
+- ogromne rozmyte sfery w tle, czyste gradienty CSS (zero obrazków, zero przesunięcia układu)
+- paleta: tło #0c0908, złoto #e8b87a, miedź #b87d3f, serif w akcentach nagłówków
+- szuflada na telefonie, focus-visible, obsługa prefers-reduced-motion
+- **Logo to odwzorowanie ze zrzutu, NIE oryginał.** Do podmiany na oficjalny plik od klienta.
+
+Ekrany: Rozmowa, Rozwój asystenta (realne dane z `GET /v1/skills`), Baza wiedzy, Briefy o firmach.
+Wszystkie zwracają HTTP 200, API umiejętności zwraca prawdziwą listę skilli agenta.
+
+**HTTPS przygotowany, czeka na DNS**: `infra/Caddyfile` + profil `publiczny` w compose.
+`flush_interval -1` w Caddy, żeby streaming czatu nie był buforowany.
+Ustalone: nameservery simplefast.ai to Hostinger (dns-parking.com), domena główna na 216.198.79.1
+(Horizons), `prezes.simplefast.ai` nie istnieje. Dodanie subdomeny NIE ruszy głównej strony.
+
 ### DO ZROBIENIA
+- **DNS: rekord A `prezes` -> 187.124.30.210** (Paweł w hPanel albo token API Hostingera dla mnie).
+  Potem: `docker compose --profile publiczny up -d caddy` i HTTPS działa sam.
 - Logowanie (3 konta testowe) - teraz aplikacja jest bez auth, dostępna tylko lokalnie.
 - Panel bazy wiedzy (upload plików) + panel rozwoju asystenta (GET /v1/skills).
 - Subdomena prezes.simplefast.ai + Caddy z HTTPS -> dopiero wtedy Paweł testuje z telefonu.

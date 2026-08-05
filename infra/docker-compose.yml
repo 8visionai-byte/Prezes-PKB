@@ -54,6 +54,10 @@ services:
     profiles: ["publiczny"]
     depends_on:
       - app
+    # env_file zamiast environment: wartosci trafiaja doslownie, bez podstawiania.
+    # Hash bcrypt zawiera znaki $, ktore compose probowalby zinterpretowac.
+    env_file:
+      - .env
     ports:
       - "80:80"
       - "443:443"

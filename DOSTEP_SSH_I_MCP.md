@@ -88,6 +88,20 @@ Promień rażenia przy wycieku = CAŁE konto:
 - wszystkie skrzynki mailowe (zmiana haseł),
 - **billing** (tworzenie zamówień zakupu, metody płatności).
 
+**AKTUALIZACJA 2026-08-05: Paweł zdecydował podpiąć MCP** (potrzebny rekord DNS pod subdomenę).
+Ustalona procedura minimalizująca ryzyko:
+- Podpinamy TYLKO `hostinger-dns-mcp` (nie 7 serwerów z konfiguratora - billing/ecommerce/mail to
+  niepotrzebna powierzchnia; VPS zarządzamy po SSH).
+- Token NIE trafia do żadnego pliku konfiguracyjnego: żyje w zmiennej środowiskowej użytkownika
+  Windows `HOSTINGER_API_TOKEN`, a proces MCP ją dziedziczy. Wpis w configu Claude Code jest bez env.
+- Token generowany Z DATĄ WYGAŚNIĘCIA w hPanel; unieważnienie: hPanel -> profil -> API -> Delete.
+- Komendy (wykonuje Paweł, klasyfikator blokuje agentowi edycję własnej konfiguracji MCP):
+  1. `$t = Read-Host "Wklej token Hostingera"` (Read-Host nie zostawia wartości w historii)
+  2. `[Environment]::SetEnvironmentVariable("HOSTINGER_API_TOKEN", $t, "User")`
+  3. `claude mcp add --scope user hostinger-dns -- npx.cmd --package=hostinger-api-mcp@latest hostinger-dns-mcp`
+  4. Restart aplikacji Claude Code (nowe procesy dziedziczą zmienną).
+
+Wcześniejsza rekomendacja (poniżej) zostaje jako kontekst ryzyka:
 **Rekomendacja: na razie NIE podpinamy MCP.** Wszystko, co robimy teraz (instalacja, konfiguracja, deploy,
 logi), idzie po SSH i dotyczy jednego serwera. MCP daje realną wartość dopiero przy rekordach DNS pod
 subdomenę - a to jest jednorazowe kliknięcie w panelu. Jeśli mimo to chcesz go podpiąć, wybierz wariant

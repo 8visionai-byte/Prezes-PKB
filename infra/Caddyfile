@@ -13,6 +13,13 @@ prezes.simplefast.ai {
 		-Server
 	}
 
+	# Tymczasowa bramka na czas budowy wlasciwego logowania w aplikacji.
+	# Bez niej kazdy, kto zna adres, rozmawia z agentem za kredyty Pawla.
+	# Hash trzymany w .env na serwerze, nie w repozytorium.
+	basic_auth {
+		pkb {$PKB_AUTH_HASH}
+	}
+
 	reverse_proxy app:3100 {
 		# KLUCZOWE dla czatu: -1 wylacza buforowanie, wiec odpowiedz agenta
 		# leci do przegladarki token po tokenie, a nie dopiero na koncu.
