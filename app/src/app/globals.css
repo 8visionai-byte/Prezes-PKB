@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/* Paleta odtworzona ze zrzutow portalu PKB:
+   ciemne, ciepłe tło z brązowym podkładem + miedziano-złoty akcent. */
+@theme {
+  --color-pkb-bg: #14100c;
+  --color-pkb-surface: #1e1813;
+  --color-pkb-surface-2: #2a221a;
+  --color-pkb-border: #3a2f24;
+  --color-pkb-accent: #e8a33d;
+  --color-pkb-accent-dim: #b87d2a;
+  --color-pkb-text: #f2ece4;
+  --color-pkb-muted: #9c8f7e;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html, body {
+  background: var(--color-pkb-bg);
+  color: var(--color-pkb-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Dekoracyjne rozmyte okręgi - jak w portalu PKB */
+.pkb-glow::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(600px circle at 15% 12%, rgba(232, 163, 61, 0.10), transparent 60%),
+    radial-gradient(700px circle at 85% 88%, rgba(184, 125, 42, 0.08), transparent 62%);
+}
+
+/* Pasek przewijania w klimacie panelu */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-pkb-border);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-pkb-accent-dim); }
+
+/* Migający kursor podczas strumieniowania odpowiedzi */
+@keyframes pkb-blink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
+.pkb-caret {
+  display: inline-block;
+  width: 8px;
+  height: 1.1em;
+  vertical-align: text-bottom;
+  background: var(--color-pkb-accent);
+  animation: pkb-blink 1s steps(1) infinite;
+  margin-left: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pkb-caret { animation: none; }
+}

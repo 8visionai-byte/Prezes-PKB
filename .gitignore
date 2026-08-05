@@ -3,3 +3,5 @@ dane-dyrektorow-PKB.md
 zrzuty-PKB/*.png
 *haslo*.txt
 *.env
+node_modules/
+.next/

@@ -143,7 +143,27 @@ Test na AVISTA OIL (firma Marcina). Agent na profilu prezes-test wygenerował PE
 
 To jest poziom "wow" dla prezesa. Model: gpt-5.6-terra (tani). Do oceny przez Pawła.
 
+### APLIKACJA PKB DZIAŁA (2026-08-05) - ZMIANA KOLEJNOŚCI
+
+Paweł zdecydował: NIE testujemy przez panel Hermesa, tylko od razu przez aplikację.
+Aplikacja zbudowana i uruchomiona na serwerze, kod w `app/`.
+
+- Next.js 15 + Tailwind 4, PWA, `output: standalone`, obraz Dockera bez roota.
+- Paleta odtworzona ze zrzutów PKB: ciemne ciepłe tło #14100c, miedziany akcent #e8a33d, rozmyte okręgi w tle.
+- `/api/chat` to proxy: przeglądarka NIGDY nie widzi klucza do Hermesa, aplikacja gada z agentem po sieci Dockera.
+- Strumieniowanie SSE bez buforowania (nagłówek X-Accel-Buffering: no).
+- **ZWERYFIKOWANE NA ŻYWO**: strona HTTP 200 z polskim interfejsem, `/api/chat` zwraca strumień
+  token po tokenie ("Tak, dział..." w paczkach SSE od hermes-agent).
+- Port 3100 tylko na 127.0.0.1. Publicznie wyjdzie przez Caddy z HTTPS.
+- Pułapka rozwiązana: `@tailwindcss/postcss` i `tailwindcss` przypięte na sztywno do 4.0.0 wywalały build
+  ("Missing field `negated` on ScannerOptions.sources") - trzeba zakresów `^4`, żeby rozwiązały się spójnie.
+
+Repo GitHub: **https://github.com/8visionai-byte/Prezes-PKB** (dane osobowe i zrzuty wykluczone przez .gitignore).
+
 ### DO ZROBIENIA
+- Logowanie (3 konta testowe) - teraz aplikacja jest bez auth, dostępna tylko lokalnie.
+- Panel bazy wiedzy (upload plików) + panel rozwoju asystenta (GET /v1/skills).
+- Subdomena prezes.simplefast.ai + Caddy z HTTPS -> dopiero wtedy Paweł testuje z telefonu.
 - Ocena briefu przez Pawła -> ewentualne poprawki skilla.
 - Wtyczka zatwierdzania wysyłki maili + dedykowane konto pocztowe (od Pawła/Radka).
 - Repo GitHub pod projekt (backup stanu agenta + Profile Distribution do przekazania prezesowi).
