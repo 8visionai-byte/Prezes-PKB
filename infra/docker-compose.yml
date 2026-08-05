@@ -85,12 +85,16 @@ services:
       # i serwerem MCP rejestrow. Port 8642 to profil default, bez naszych rzeczy.
       - HERMES_API_URL=http://hermes:8643
       - BAZA_WIEDZY_DIR=/dane/baza-wiedzy
+      - DANE_DIR=/dane/aplikacja
+      - SKILLE_DIR=/skille
     env_file:
       - .env
     volumes:
-      # Katalog roboczy profilu prezesa: aplikacja tu zapisuje wgrane pliki,
-      # agent czyta je swoimi narzedziami plikowymi. Wspolne miejsce, jeden zrodlo prawdy.
+      # Katalog roboczy profilu prezesa: aplikacja tu zapisuje wgrane pliki i historie
+      # rozmow, agent czyta pliki swoimi narzedziami. Wspolne miejsce, jedno zrodlo prawdy.
       - /root/hermes-data/profiles/prezes-test/workspace:/dane
+      # Skille tylko do odczytu - zeby aplikacja mogla pokazac pelny opis umiejetnosci.
+      - /root/hermes-data/profiles/prezes-test/skills:/skille:ro
     ports:
       # Na razie tylko lokalnie. Publicznie wyjdzie przez Caddy z HTTPS.
       - "127.0.0.1:3100:3100"

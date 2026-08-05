@@ -24,7 +24,6 @@ const GRUPY: { tytul: string; pozycje: Pozycja[] }[] = [
   {
     tytul: 'Wiedza',
     pozycje: [
-      { href: '/baza-wiedzy', etykieta: 'Baza wiedzy', ikona: <I d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /> },
       { href: '/umiejetnosci', etykieta: 'Rozwój asystenta', ikona: <I d="M12 2v4m0 12v4M2 12h4m12 0h4M5 5l2.8 2.8m8.4 8.4L19 19M19 5l-2.8 2.8m-8.4 8.4L5 19" /> },
     ],
   },
