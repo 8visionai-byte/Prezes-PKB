@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Nawigacja } from '@/components/Nawigacja';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -9,17 +10,22 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#14100c',
+  themeColor: '#0c0908',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pl">
-      <body className="pkb-glow min-h-dvh antialiased">{children}</body>
+      <body className="min-h-dvh">
+        <div className="pkb-sfery" aria-hidden>
+          <span />
+        </div>
+        <Nawigacja />
+        <div className="relative z-10 lg:pl-[264px]">{children}</div>
+      </body>
     </html>
   );
 }

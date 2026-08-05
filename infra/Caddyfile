@@ -1,0 +1,21 @@
+# Brama HTTPS dla aplikacji PKB.
+# Caddy sam wyrabia i odnawia certyfikat Let's Encrypt, pod warunkiem ze rekord DNS
+# prezes.simplefast.ai wskazuje juz na ten serwer i porty 80/443 sa otwarte.
+
+prezes.simplefast.ai {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy app:3100 {
+		# KLUCZOWE dla czatu: -1 wylacza buforowanie, wiec odpowiedz agenta
+		# leci do przegladarki token po tokenie, a nie dopiero na koncu.
+		flush_interval -1
+	}
+}

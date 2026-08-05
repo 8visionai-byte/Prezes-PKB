@@ -1,58 +1,187 @@
 @import "tailwindcss";
 
-/* Paleta odtworzona ze zrzutow portalu PKB:
-   ciemne, ciepłe tło z brązowym podkładem + miedziano-złoty akcent. */
+/* ---------------------------------------------------------------------------
+   Paleta odtworzona ze zrzutow portalu Partnerskie Kluby Biznesu.
+   Wzorzec jest specyfikacja: ciemne, cieple tlo, miedziano-zloty akcent,
+   ogromne rozmyte sfery w tle, serif w logo i akcentach naglowkow.
+   --------------------------------------------------------------------------- */
 @theme {
-  --color-pkb-bg: #14100c;
-  --color-pkb-surface: #1e1813;
-  --color-pkb-surface-2: #2a221a;
-  --color-pkb-border: #3a2f24;
-  --color-pkb-accent: #e8a33d;
-  --color-pkb-accent-dim: #b87d2a;
-  --color-pkb-text: #f2ece4;
-  --color-pkb-muted: #9c8f7e;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-pkb-bg: #0c0908;
+  --color-pkb-panel: #100c0a;
+  --color-pkb-surface: #1a1411;
+  --color-pkb-surface-2: #241b16;
+  --color-pkb-border: #33261e;
+  --color-pkb-border-soft: #241b16;
+
+  --color-pkb-gold: #e8b87a;
+  --color-pkb-gold-strong: #f0c98a;
+  --color-pkb-copper: #b87d3f;
+  --color-pkb-bronze: #6b4423;
+
+  --color-pkb-text: #f5f0e8;
+  --color-pkb-muted: #8a7f70;
+  --color-pkb-faint: #5d5449;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
 }
 
-html, body {
+html {
+  color-scheme: dark;
+}
+
+body {
   background: var(--color-pkb-bg);
   color: var(--color-pkb-text);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
 }
 
-/* Dekoracyjne rozmyte okręgi - jak w portalu PKB */
-.pkb-glow::before {
-  content: "";
+/* --- Sfery w tle -----------------------------------------------------------
+   Odwzorowanie ogromnych, rozmytych kul z portalu PKB. Czyste gradienty CSS,
+   zero obrazkow: nic sie nie doczytuje, nie ma przesuniecia ukladu. --------- */
+.pkb-sfery {
   position: fixed;
   inset: 0;
-  pointer-events: none;
   z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.pkb-sfery::before,
+.pkb-sfery::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(1px);
+}
+.pkb-sfery::before {
+  width: 78vmax;
+  height: 78vmax;
+  right: -26vmax;
+  bottom: -34vmax;
   background:
-    radial-gradient(600px circle at 15% 12%, rgba(232, 163, 61, 0.10), transparent 60%),
-    radial-gradient(700px circle at 85% 88%, rgba(184, 125, 42, 0.08), transparent 62%);
+    radial-gradient(circle at 34% 28%, rgba(184, 125, 63, 0.30), rgba(107, 68, 35, 0.14) 42%, transparent 68%),
+    radial-gradient(circle at 62% 74%, rgba(232, 184, 122, 0.10), transparent 55%);
+}
+.pkb-sfery::after {
+  width: 52vmax;
+  height: 52vmax;
+  left: -18vmax;
+  top: -22vmax;
+  background: radial-gradient(circle at 62% 62%, rgba(184, 125, 63, 0.20), rgba(107, 68, 35, 0.08) 46%, transparent 70%);
+}
+/* Trzecia sfera, mniejsza, dla glebi. */
+.pkb-sfery > span {
+  position: absolute;
+  right: 12vmax;
+  top: 6vmax;
+  width: 26vmax;
+  height: 26vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 36%, rgba(232, 184, 122, 0.14), transparent 62%);
 }
 
-/* Pasek przewijania w klimacie panelu */
+/* --- Tresc od agenta (markdown) ------------------------------------------- */
+.pkb-proza {
+  font-size: 15px;
+  line-height: 1.7;
+}
+.pkb-proza > * + * { margin-top: 0.85rem; }
+.pkb-proza strong { color: var(--color-pkb-gold); font-weight: 600; }
+.pkb-proza em { font-style: italic; }
+.pkb-proza a {
+  color: var(--color-pkb-gold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in oklab, var(--color-pkb-gold) 45%, transparent);
+  overflow-wrap: anywhere;
+  transition: text-decoration-color 150ms ease, color 150ms ease;
+}
+.pkb-proza a:hover {
+  color: var(--color-pkb-gold-strong);
+  text-decoration-color: currentColor;
+}
+.pkb-proza h1, .pkb-proza h2, .pkb-proza h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-pkb-text);
+  margin-top: 1.4rem;
+}
+.pkb-proza h1 { font-size: 1.25rem; }
+.pkb-proza h2 { font-size: 1.1rem; }
+.pkb-proza h3 { font-size: 1rem; }
+.pkb-proza ul, .pkb-proza ol { padding-left: 1.25rem; }
+.pkb-proza ul { list-style: disc; }
+.pkb-proza ol { list-style: decimal; }
+.pkb-proza li + li { margin-top: 0.35rem; }
+.pkb-proza li::marker { color: var(--color-pkb-copper); }
+.pkb-proza blockquote {
+  border-left: 2px solid var(--color-pkb-copper);
+  padding-left: 0.9rem;
+  color: var(--color-pkb-muted);
+}
+.pkb-proza code {
+  font-size: 0.88em;
+  background: var(--color-pkb-surface-2);
+  border: 1px solid var(--color-pkb-border);
+  border-radius: 5px;
+  padding: 0.1em 0.35em;
+}
+.pkb-proza pre {
+  background: var(--color-pkb-surface);
+  border: 1px solid var(--color-pkb-border);
+  border-radius: 12px;
+  padding: 0.9rem;
+  overflow-x: auto;
+}
+.pkb-proza pre code { background: none; border: 0; padding: 0; }
+.pkb-proza hr { border-color: var(--color-pkb-border); margin: 1.25rem 0; }
+/* Tabele: przewijaja sie same, strona nigdy nie jedzie w bok. */
+.pkb-tabela { overflow-x: auto; }
+.pkb-proza table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.pkb-proza th, .pkb-proza td {
+  border: 1px solid var(--color-pkb-border);
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+.pkb-proza th { background: var(--color-pkb-surface); color: var(--color-pkb-gold); font-weight: 600; }
+
+/* --- Detale ---------------------------------------------------------------- */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--color-pkb-border);
-  border-radius: 999px;
-}
-::-webkit-scrollbar-thumb:hover { background: var(--color-pkb-accent-dim); }
+::-webkit-scrollbar-thumb { background: var(--color-pkb-border); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-pkb-copper); }
 
-/* Migający kursor podczas strumieniowania odpowiedzi */
-@keyframes pkb-blink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
-.pkb-caret {
-  display: inline-block;
-  width: 8px;
-  height: 1.1em;
-  vertical-align: text-bottom;
-  background: var(--color-pkb-accent);
-  animation: pkb-blink 1s steps(1) infinite;
-  margin-left: 2px;
+:focus-visible {
+  outline: 2px solid var(--color-pkb-gold);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
+
+@keyframes pkb-blink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
+.pkb-kursor {
+  display: inline-block;
+  width: 7px;
+  height: 1.05em;
+  vertical-align: text-bottom;
+  background: var(--color-pkb-gold);
+  border-radius: 1px;
+  animation: pkb-blink 1.05s steps(1) infinite;
+  margin-left: 3px;
+}
+
+@keyframes pkb-wejscie {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.pkb-wejscie { animation: pkb-wejscie 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes pkb-puls { 0%, 100% { opacity: 0.35 } 50% { opacity: 1 } }
+.pkb-puls { animation: pkb-puls 1.4s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .pkb-caret { animation: none; }
+  .pkb-kursor, .pkb-wejscie, .pkb-puls { animation: none; }
+  .pkb-wejscie { opacity: 1; transform: none; }
 }

@@ -44,6 +44,29 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Brama HTTPS. Uruchamiac DOPIERO gdy rekord DNS wskazuje na ten serwer,
+  # inaczej Let's Encrypt odmowi wystawienia certyfikatu:
+  #   docker compose --profile publiczny up -d caddy
+  caddy:
+    image: caddy:2-alpine
+    container_name: pkb-caddy
+    restart: unless-stopped
+    profiles: ["publiczny"]
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "2"
+
   # Aplikacja PKB - to jest produkt dla prezesa.
   # Rozmawia z Hermesem po sieci Dockera; klucz API nigdy nie trafia do przegladarki.
   app:
@@ -101,3 +124,7 @@ services:
 # (m.in. do wtyczki Hermes Achievements z panelem rozwoju agenta).
 #
 # Aplikacja PKB i Caddy dojdą do tego pliku w fazie 5 realizacji.
+
+volumes:
+  caddy-data:
+  caddy-config:
