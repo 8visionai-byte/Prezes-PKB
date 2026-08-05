@@ -8,6 +8,7 @@ type Podglad =
 
 const OBRAZ = /\.(png|jpe?g|webp)$/i;
 const PDF = /\.pdf$/i;
+const HTML = /\.html?$/i;
 
 export function PodgladPliku({ nazwa, zamknij }: { nazwa: string; zamknij: () => void }) {
   const [dane, setDane] = useState<Podglad | null>(null);
@@ -15,6 +16,7 @@ export function PodgladPliku({ nazwa, zamknij }: { nazwa: string; zamknij: () =>
 
   const jestObraz = OBRAZ.test(nazwa);
   const jestPdf = PDF.test(nazwa);
+  const jestHtml = HTML.test(nazwa);
   const url = `/api/pliki/podglad?nazwa=${encodeURIComponent(nazwa)}`;
 
   useEffect(() => {
@@ -24,7 +26,7 @@ export function PodgladPliku({ nazwa, zamknij }: { nazwa: string; zamknij: () =>
   }, [zamknij]);
 
   useEffect(() => {
-    if (jestObraz || jestPdf) return;
+    if (jestObraz || jestPdf || jestHtml) return;
     fetch(url)
       .then(async (r) => {
         const d = await r.json();
@@ -32,7 +34,7 @@ export function PodgladPliku({ nazwa, zamknij }: { nazwa: string; zamknij: () =>
         setDane(d);
       })
       .catch((e) => setBlad(e instanceof Error ? e.message : String(e)));
-  }, [url, jestObraz, jestPdf]);
+  }, [url, jestObraz, jestPdf, jestHtml]);
 
   return (
     <div
@@ -74,6 +76,13 @@ export function PodgladPliku({ nazwa, zamknij }: { nazwa: string; zamknij: () =>
             <img src={url} alt={nazwa} className="mx-auto max-h-[70dvh] w-auto rounded-lg" />
           ) : jestPdf ? (
             <iframe src={url} title={nazwa} className="h-[70dvh] w-full rounded-lg border border-pkb-border-soft" />
+          ) : jestHtml ? (
+            <iframe
+              src={url}
+              title={nazwa}
+              sandbox=""
+              className="h-[70dvh] w-full rounded-lg border border-pkb-border-soft bg-pkb-bg"
+            />
           ) : dane?.typ === 'tekst' ? (
             <>
               <pre className="whitespace-pre-wrap break-words font-sans text-[14px] leading-relaxed text-pkb-text">

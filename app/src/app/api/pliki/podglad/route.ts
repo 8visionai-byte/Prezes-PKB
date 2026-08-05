@@ -52,6 +52,20 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    if (rozszerzenie === '.html' || rozszerzenie === '.htm') {
+      const bufor = await readFile(sciezka);
+      // Wizualizacje generuje nasz agent, ale i tak podajemy je z ostra polityka
+      // tresci: zadnych polaczen na zewnatrz, zadnych skryptow. Same style i SVG.
+      return new Response(new Uint8Array(bufor), {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Content-Security-Policy':
+            "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'",
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    }
+
     if (rozszerzenie === '.pdf') {
       const bufor = await readFile(sciezka);
       return new Response(new Uint8Array(bufor), {
