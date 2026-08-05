@@ -81,8 +81,16 @@ services:
       - hermes
     environment:
       - TZ=Europe/Warsaw
-      - HERMES_API_URL=http://hermes:8642
-      - HERMES_API_KEY=${HERMES_API_KEY}
+      # Port 8643 = profil "prezes-test", ten z naszym skillem brief-firmy
+      # i serwerem MCP rejestrow. Port 8642 to profil default, bez naszych rzeczy.
+      - HERMES_API_URL=http://hermes:8643
+      - BAZA_WIEDZY_DIR=/dane/baza-wiedzy
+    env_file:
+      - .env
+    volumes:
+      # Katalog roboczy profilu prezesa: aplikacja tu zapisuje wgrane pliki,
+      # agent czyta je swoimi narzedziami plikowymi. Wspolne miejsce, jeden zrodlo prawdy.
+      - /root/hermes-data/profiles/prezes-test/workspace:/dane
     ports:
       # Na razie tylko lokalnie. Publicznie wyjdzie przez Caddy z HTTPS.
       - "127.0.0.1:3100:3100"
