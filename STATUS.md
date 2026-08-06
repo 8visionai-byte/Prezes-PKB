@@ -222,6 +222,19 @@ Rozwiązane pułapki tej tury:
 Ikony PWA generuje `app/scripts/ikony.mjs` (czysty Node, własny koder PNG, zero paczek npm)
 z pliku `app/public/logo-pkb.png`.
 
+**Agent dostał własną tożsamość (2026-08-06).** Profil `prezes-test` miał domyślny opis
+"Hermes Agent, an intelligent AI assistant created by Nous Research". Podmienione na
+`infra/SOUL-prezes.md`: kim jest prezes, polski prosty język, zakaz em-dash i ścieżek
+systemowych, zakaz zmyślania faktów o firmach, obowiązek zaglądania do notatek prezesa,
+proaktywne propozycje kojarzenia i rysunku. Domyślny plik zachowany w
+`/root/backups/SOUL-domyslny-kopia.md`.
+DOWÓD: zapytany "kim jesteś" odpowiada "Jestem Twoim asystentem w Partnerskich Klubach
+Biznesu... Pamiętam też notatki ze spotkań, żeby łatwiej łączyć właściwych ludzi".
+
+**DOWÓD, po co są notatki prezesa**: w bazie leżała notatka "firma XYZ buduje hale
+w Strzegomiu, szuka wykonawcy elewacji". Na pytanie "jutro mam spotkanie z firmą od elewacji,
+czy mam komu ją polecić" agent sam znalazł tę notatkę i skojarzył kontakt.
+
 ### DO ZROBIENIA
 - **Logowanie prawdziwymi kontami** - największa dziura. Teraz jest tylko basic auth na Caddy.
 - Wysyłka maili: decyzja Pawła - osobna skrzynka asystenta (ok. 1 h) czy pełne OAuth Google (dzień + weryfikacja).
