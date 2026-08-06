@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { wczytajUstawienia } from '@/lib/ustawienia';
 
 /**
  * Mikrofon przy polu wpisywania. Prezes trzyma telefon i mowi, a tekst laduje
@@ -60,8 +61,14 @@ export function Dyktafon({
   async function start() {
     setBlad(null);
     try {
+      // Mikrofon wybrany w ustawieniach. Pusty ciag = ten, ktory system uznaje za domyslny.
+      const wybrany = wczytajUstawienia().mikrofonId;
       const strumien = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          ...(wybrany ? { deviceId: { exact: wybrany } } : {}),
+        },
       });
 
       const format = FORMATY.find((f) => MediaRecorder.isTypeSupported(f.mime));

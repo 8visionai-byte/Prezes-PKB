@@ -4,28 +4,31 @@ import { useEffect, useRef } from 'react';
 import { useUstawienia } from '@/lib/ustawienia';
 
 /**
- * Pasek powitalny: dwie pikselowe pandy schodza sie z dwoch stron, podaja sobie lapy,
- * unosza uscisk do gory, a nad nimi ulatuja ikonki uscisnietych dloni. Potem rozchodza sie
- * i wszystko zaczyna sie od nowa.
+ * Pasek powitalny. Dwie pandy pracują u siebie: SFAI klepie coś przy komputerze,
+ * PKB odbija piłkę. Po chwili zostawiają swoje zajęcia, schodzą się na środek,
+ * podają sobie ręce, nad nimi ulatują ikonki uścisku, po czym wracają do swoich
+ * miejsc i wszystko zaczyna się od nowa.
  *
- * Nad glowa lewej pandy idzie napis SFAI, nad prawa PKB - dwie strony, ktore sie dogadaly.
+ * Nad głowami wędrują napisy SFAI i PKB, czyli dwie strony, które się dogadały.
  *
- * Rysowane w calosci kodem: zero obrazkow, zero bibliotek. Animacja stoi, gdy karta jest
- * w tle (bateria telefonu) i gdy uzytkownik prosi system o ograniczenie ruchu.
+ * Rysowane w całości kodem: zero obrazków, zero bibliotek. Animacja stoi, gdy karta
+ * jest w tle (bateria telefonu) i gdy użytkownik prosi system o ograniczenie ruchu.
  */
 
 const U = 4; // wielkosc jednego piksela rysunku, w px CSS
 const WYS = 24; // wysokosc sceny w pikselach rysunku
-const ZIEMIA = 22; // po tej linii chodza pandy
+const ZIEMIA = 22;
 const PANDA_SZER = 10;
 const PANDA_WYS = 13;
 const GORA_PANDY = ZIEMIA - PANDA_WYS;
 
-const CYKL = 8000;
-const WEJSCIE = 2600;
-const DOTKNIECIE = 3000;
-const UNIESIENIE_DO = 4600;
-const WYJSCIE = 7000;
+// Kolejne chwile cyklu, w milisekundach.
+const PRACA_DO = 4200;
+const ZEJSCIE_DO = 6400;
+const DOTKNIECIE = 6800;
+const UNIESIENIE_DO = 8600;
+const POWROT_DO = 10800;
+const CYKL = 14000;
 
 /** Pikselowy krój 3x5. Tyle wystarczy na SFAI i PKB. */
 const KROJ: Record<string, string[]> = {
@@ -37,6 +40,22 @@ const KROJ: Record<string, string[]> = {
   K: ['101', '101', '110', '101', '101'],
   B: ['110', '101', '110', '101', '110'],
 };
+
+/**
+ * Ikonka uścisku, rysowana pikselami w tym samym stylu co pandy.
+ * Górna połowa w złocie, dolna w miedzi, przerwa w środku to miejsce złączenia:
+ * dwie strony, które trzymają się razem. Zastąpiła emoji, które odstawało od reszty.
+ */
+const IKONA_USCISKU = [
+  '..111..',
+  '.11111.',
+  '111.111',
+  '222.222',
+  '.22222.',
+  '..222..',
+];
+
+const PILKA = ['.##.', '####', '####', '.##.'];
 
 const szerokoscNapisu = (napis: string) => napis.length * 4 - 1;
 
@@ -56,7 +75,26 @@ function napisz(ctx: CanvasRenderingContext2D, napis: string, x: number, y: numb
   }
 }
 
-type Paleta = { czern: string; biel: string; akcent: string; napis: string };
+/** Rysuje bitmapę opisaną znakami. Kropka = przezroczyste. */
+function bitmapa(
+  ctx: CanvasRenderingContext2D,
+  wzor: string[],
+  x: number,
+  y: number,
+  kolory: Record<string, string>,
+) {
+  wzor.forEach((wiersz, wy) => {
+    [...wiersz].forEach((znak, wx) => {
+      const kolor = kolory[znak];
+      if (kolor) {
+        ctx.fillStyle = kolor;
+        ctx.fillRect(Math.round(x) + wx, Math.round(y) + wy, 1, 1);
+      }
+    });
+  });
+}
+
+type Paleta = { czern: string; biel: string; akcent: string; napis: string; miedz: string };
 
 function panda(
   ctx: CanvasRenderingContext2D,
@@ -92,6 +130,19 @@ function panda(
   px(6, 11, 2, krok ? 1 : 2, p.czern);
 }
 
+/** Biurko z monitorem. Ekran migocze, wiec widac, ze cos sie tam dzieje. */
+function komputer(ctx: CanvasRenderingContext2D, x: number, p: Paleta, jasno: boolean) {
+  ctx.fillStyle = p.czern;
+  ctx.fillRect(x + 1, 13, 8, 6); // obudowa monitora
+  ctx.fillRect(x + 4, 19, 2, 1); // podstawka
+  ctx.fillStyle = jasno ? p.akcent : p.miedz;
+  ctx.fillRect(x + 2, 14, 6, 4); // ekran
+  ctx.fillStyle = p.miedz;
+  ctx.fillRect(x, 20, 10, 1); // blat
+  ctx.fillRect(x + 1, 21, 1, 1); // nogi biurka
+  ctx.fillRect(x + 8, 21, 1, 1);
+}
+
 /** Wyprowadzenie: 0 na starcie, 1 na koncu, z lagodnym hamowaniem. */
 const gladko = (t: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
 
@@ -110,17 +161,22 @@ export function Pandy() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const p: Paleta = { czern: '#2a2119', biel: '#f0e6d8', akcent: '#e8b87a', napis: '#b87d3f' };
+    const p: Paleta = {
+      czern: '#2a2119',
+      biel: '#f0e6d8',
+      akcent: '#e8b87a',
+      napis: '#b87d3f',
+      miedz: '#b87d3f',
+    };
     const systemOgranicza = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const statycznie = systemOgranicza || !ruch;
 
-    let szerU = 60; // szerokosc sceny w pikselach rysunku
+    let szerU = 60;
     let anim = 0;
     let start = performance.now();
 
     const dopasuj = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
-      // Na telefonie mniejszy piksel: pasek zajmuje 72 px zamiast 96 px i nie zjada ekranu.
       const u = window.innerWidth < 640 ? U - 1 : U;
       const szerCss = Math.max(160, Math.round(oprawa.clientWidth));
       szerU = Math.floor(szerCss / u);
@@ -130,32 +186,48 @@ export function Pandy() {
       canvas.style.height = `${WYS * u}px`;
       ctx.setTransform(u * dpr, 0, 0, u * dpr, 0, 0);
       ctx.imageSmoothingEnabled = false;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
     };
 
-    /** Jedna klatka sceny dla zadanego czasu w cyklu. */
     const scena = (t: number) => {
       ctx.clearRect(0, 0, szerU, WYS);
 
       const srodek = szerU / 2;
-      // Odleglosc spotkania dobrana tak, zeby napisy SFAI i PKB nad glowami sie nie zlewaly.
       const spotL = Math.round(srodek - 13);
       const spotP = Math.round(srodek + 3);
-      const startL = -PANDA_SZER - 2;
-      const startP = szerU + 2;
+
+      // Miejsca pracy. Na waskim ekranie rekwizyty by sie nakladaly na pandy,
+      // wiec wtedy pandy po prostu czekaja u siebie bez komputera i pilki.
+      const jestMiejsce = szerU >= 62;
+      const stacjaL = jestMiejsce ? 13 : 2;
+      const stacjaP = jestMiejsce ? szerU - 23 : szerU - PANDA_SZER - 2;
+      const komputerX = 2;
+      const pilkaX = stacjaP + 13;
 
       let xl: number;
       let xp: number;
+      let kierL: 1 | -1 = 1;
+      let kierP: 1 | -1 = -1;
       let lapa: 'dol' | 'przod' | 'gora' = 'dol';
+      let lapaL: 'dol' | 'przod' | 'gora' = 'dol';
+      let lapaP: 'dol' | 'przod' | 'gora' = 'dol';
       let uniesienie = 0;
       let idzie = false;
+      let przyPracy = false;
 
-      if (t < WEJSCIE) {
-        const k = gladko(t / WEJSCIE);
-        xl = startL + (spotL - startL) * k;
-        xp = startP + (spotP - startP) * k;
-        idzie = k < 0.98;
+      if (t < PRACA_DO) {
+        // każdy u siebie: SFAI patrzy w monitor, PKB odbija piłkę
+        xl = stacjaL;
+        xp = stacjaP;
+        kierL = -1;
+        kierP = 1;
+        przyPracy = true;
+        lapaL = Math.floor(t / 180) % 2 === 0 ? 'przod' : 'dol';
+        lapaP = Math.sin(t / 190) > 0 ? 'przod' : 'dol';
+      } else if (t < ZEJSCIE_DO) {
+        const k = gladko((t - PRACA_DO) / (ZEJSCIE_DO - PRACA_DO));
+        xl = stacjaL + (spotL - stacjaL) * k;
+        xp = stacjaP + (spotP - stacjaP) * k;
+        idzie = k < 0.97;
       } else if (t < DOTKNIECIE) {
         xl = spotL;
         xp = spotP;
@@ -165,45 +237,68 @@ export function Pandy() {
         xp = spotP;
         lapa = 'gora';
         uniesienie = gladko((t - DOTKNIECIE) / 700);
-      } else if (t < WYJSCIE) {
-        const k = gladko((t - UNIESIENIE_DO) / (WYJSCIE - UNIESIENIE_DO));
-        xl = spotL + (startL - spotL) * k;
-        xp = spotP + (startP - spotP) * k;
-        idzie = true;
+      } else if (t < POWROT_DO) {
+        const k = gladko((t - UNIESIENIE_DO) / (POWROT_DO - UNIESIENIE_DO));
+        xl = spotL + (stacjaL - spotL) * k;
+        xp = spotP + (stacjaP - spotP) * k;
+        idzie = k < 0.97;
+        if (k > 0.9) {
+          kierL = -1;
+          kierP = 1;
+        }
       } else {
-        xl = startL;
-        xp = startP;
+        xl = stacjaL;
+        xp = stacjaP;
+        kierL = -1;
+        kierP = 1;
+        przyPracy = true;
+        lapaL = Math.floor(t / 180) % 2 === 0 ? 'przod' : 'dol';
+        lapaP = Math.sin(t / 190) > 0 ? 'przod' : 'dol';
+      }
+
+      if (lapa !== 'dol') {
+        lapaL = lapa;
+        lapaP = lapa;
+      }
+
+      // rekwizyty za pandami
+      if (jestMiejsce) {
+        komputer(ctx, komputerX, p, Math.floor(t / 220) % 2 === 0);
+        if (przyPracy) {
+          const wysokosc = Math.abs(Math.sin(t / 190)) * 7;
+          bitmapa(ctx, PILKA, pilkaX, ZIEMIA - 4 - wysokosc, { '#': p.akcent });
+        } else {
+          bitmapa(ctx, PILKA, pilkaX, ZIEMIA - 4, { '#': p.miedz });
+        }
       }
 
       const krok = idzie ? Math.floor(t / 130) % 2 === 0 : false;
 
-      panda(ctx, xl, GORA_PANDY, 1, krok, lapa, p);
-      panda(ctx, xp, GORA_PANDY, -1, krok, lapa, p);
+      panda(ctx, xl, GORA_PANDY, kierL, krok, lapaL, p);
+      panda(ctx, xp, GORA_PANDY, kierP, krok, lapaP, p);
 
-      // zlaczone lapy: przy uniesieniu wedruja w gore
+      // złączone łapy: przy uniesieniu wędrują w górę
       if (lapa !== 'dol') {
         const yl = lapa === 'gora' ? GORA_PANDY + 3 - uniesienie * 2 : GORA_PANDY + 6;
         ctx.fillStyle = p.akcent;
         ctx.fillRect(spotL + 9, yl, spotP - spotL - 8, 2);
       }
 
-      // Ikonki uscisnietych dloni ulatuja nad pandami po przybiciu.
-      // Rysowane PRZED napisami, zeby przelatywaly za nimi i nie zaslanialy SFAI ani PKB.
-      if (t >= DOTKNIECIE && t < WYJSCIE) {
-        ctx.font = '5px ui-sans-serif, system-ui, "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+      // ikonki uścisku ulatują nad pandami, rysowane PRZED napisami,
+      // więc przelatują za nimi i nie zasłaniają SFAI ani PKB
+      if (t >= DOTKNIECIE && t < POWROT_DO) {
         for (const opoznienie of [0, 520, 1040]) {
           const wiek = t - DOTKNIECIE - opoznienie;
-          if (wiek < 0 || wiek > 1500) continue;
-          const k = wiek / 1500;
-          const y = GORA_PANDY + 2 - k * 13;
-          const bok = Math.sin(k * Math.PI * 2) * 1.2;
+          if (wiek < 0 || wiek > 1600) continue;
+          const k = wiek / 1600;
+          const y = GORA_PANDY + 1 - k * 13;
+          const bok = Math.sin(k * Math.PI * 2) * 1.5;
           ctx.globalAlpha = k < 0.15 ? k / 0.15 : 1 - Math.max(0, (k - 0.5) / 0.5);
-          ctx.fillText('🤝', srodek + bok, y);
+          bitmapa(ctx, IKONA_USCISKU, srodek - 3.5 + bok, y, { '1': p.akcent, '2': p.miedz });
           ctx.globalAlpha = 1;
         }
       }
 
-      // napisy wedruja razem z pandami, dokladnie nad glowami, zawsze na wierzchu
       const yNapisu = GORA_PANDY - 7;
       napisz(ctx, 'SFAI', xl + PANDA_SZER / 2 - szerokoscNapisu('SFAI') / 2, yNapisu, p.napis);
       napisz(ctx, 'PKB', xp + PANDA_SZER / 2 - szerokoscNapisu('PKB') / 2, yNapisu, p.napis);
@@ -221,14 +316,14 @@ export function Pandy() {
 
     const wznow = () => {
       if (anim || statycznie) return;
-      start = performance.now() - (performance.now() - start) % CYKL;
+      start = performance.now() - ((performance.now() - start) % CYKL);
       anim = requestAnimationFrame(rysuj);
     };
 
     const naWidocznosc = () => (document.hidden ? wstrzymaj() : wznow());
 
     dopasuj();
-    if (statycznie) scena(DOTKNIECIE + 320); // sam moment przybicia
+    if (statycznie) scena(DOTKNIECIE + 320);
     else anim = requestAnimationFrame(rysuj);
 
     const obserwator = new ResizeObserver(() => {

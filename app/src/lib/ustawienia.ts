@@ -10,12 +10,15 @@ export type Ustawienia = {
   pandy: boolean;
   animacje: boolean;
   powiadomieniaDzwiek: boolean;
+  /** Wybrany mikrofon. Pusty ciag = ten, ktory system uznaje za domyslny. */
+  mikrofonId: string;
 };
 
 export const DOMYSLNE: Ustawienia = {
   pandy: true,
   animacje: true,
   powiadomieniaDzwiek: false,
+  mikrofonId: '',
 };
 
 const KLUCZ = 'pkb-ustawienia-v1';

@@ -61,11 +61,24 @@ function Czat() {
       setZalaczniki((z) => [...new Set([...z, (e as CustomEvent<string>).detail])]);
       poleRef.current?.focus();
     };
+    // "Nowa rozmowa" ma naprawde czyscic watek, takze gdy prezes juz jest na tym ekranie.
+    const naNowa = () => {
+      if (odpytywanie.current) window.clearInterval(odpytywanie.current);
+      odpytywanie.current = null;
+      setId(nowyId());
+      setWiadomosci([]);
+      setZalaczniki([]);
+      setTekst('');
+      setBlad(null);
+      setPracuje(false);
+    };
     window.addEventListener('pkb-podglad', naPodglad);
     window.addEventListener('pkb-dolacz', naDolacz);
+    window.addEventListener('pkb-nowa-rozmowa', naNowa);
     return () => {
       window.removeEventListener('pkb-podglad', naPodglad);
       window.removeEventListener('pkb-dolacz', naDolacz);
+      window.removeEventListener('pkb-nowa-rozmowa', naNowa);
     };
   }, []);
 

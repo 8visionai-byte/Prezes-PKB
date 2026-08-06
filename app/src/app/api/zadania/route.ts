@@ -3,6 +3,7 @@ import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { utworzZadanie, aktualizujTresc, zakonczZadanie, trwajace } from '@/lib/zadania';
 import { wyslijPowiadomienie } from '@/lib/push';
+import { naWiadomoscSystemowa, wczytajPersonalizacje } from '@/lib/personalizacja';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -63,14 +64,19 @@ async function prowadzZadanie(
 ) {
   const plikiPrzed = new Set(await spisPlikow());
   try {
+    // Personalizacja od prezesa idzie na sam poczatek jako wiadomosc systemowa.
+    // Dzieki temu zmiana "zwracaj sie do mnie po imieniu" dziala od nastepnej
+    // wiadomosci, bez ruszania konfiguracji agenta i bez restartu Hermesa.
+    const wstep = naWiadomoscSystemowa(await wczytajPersonalizacje());
+    const wiadomosci = [
+      ...(wstep ? [{ role: 'system', content: wstep }] : []),
+      ...kontekst.map((m) => ({ role: m.rola, content: m.tresc })),
+    ];
+
     const res = await fetch(`${HERMES_URL}/v1/chat/completions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${HERMES_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'hermes-agent',
-        messages: kontekst.map((m) => ({ role: m.rola, content: m.tresc })),
-        stream: true,
-      }),
+      body: JSON.stringify({ model: 'hermes-agent', messages: wiadomosci, stream: true }),
     });
 
     if (!res.ok || !res.body) {

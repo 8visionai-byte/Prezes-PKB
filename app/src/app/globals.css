@@ -13,6 +13,11 @@
   --color-pkb-border: #33261e;
   --color-pkb-border-soft: #241b16;
 
+  /* Podswietlenie pozycji w panelu bocznym. Wyraznie jasniejsze od tla,
+     ale ciemniejsze od zlotego przycisku "Nowa rozmowa", zeby nie konkurowalo. */
+  --color-pkb-hover: #3a2b1d;
+  --color-pkb-active: #4d3722;
+
   --color-pkb-gold: #e8b87a;
   --color-pkb-gold-strong: #f0c98a;
   --color-pkb-copper: #b87d3f;

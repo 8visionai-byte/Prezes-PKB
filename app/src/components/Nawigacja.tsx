@@ -2,21 +2,27 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { LogoPKB } from './LogoPKB';
+import { PanelUzytkownika } from './PanelUzytkownika';
 
 type Naglowek = { id: string; tytul: string; zmieniona: number };
-type Plik = { nazwa: string; rozmiar: number; zmieniony: string };
-type Umiejetnosc = { name?: string; description?: string };
-
-/** Umiejetnosci zbudowane pod PKB. Ida na gore listy w panelu. */
-const NASZE = ['brief-firmy', 'wizualizacja'];
 
 const I = ({ d }: { d: string }) => (
   <svg viewBox="0 0 24 24" className="size-[17px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
   </svg>
 );
+
+const POZYCJE = [
+  { adres: '/poczta', nazwa: 'Poczta', ikona: 'M4 4h16v16H4zM4 7l8 6 8-6' },
+  { adres: '/dokumenty', nazwa: 'Dokumenty', ikona: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 13h6M9 17h6' },
+  {
+    adres: '/ustawienia',
+    nazwa: 'Ustawienia',
+    ikona: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
+  },
+];
 
 function kiedy(z: number) {
   const min = Math.round((Date.now() - z) / 60000);
@@ -36,34 +42,14 @@ function TrescNawigacji() {
 
   const [otwarte, setOtwarte] = useState(false);
   const [historia, setHistoria] = useState<Naglowek[]>([]);
-  const [pliki, setPliki] = useState<Plik[]>([]);
-  const [skille, setSkille] = useState<Umiejetnosc[]>([]);
-  const [sekcja, setSekcja] = useState<'rozmowy' | 'dokumenty' | 'skille'>('rozmowy');
-  const [wgrywa, setWgrywa] = useState(false);
-  const plikRef = useRef<HTMLInputElement>(null);
+  const [szukaj, setSzukaj] = useState('');
+  const [panelUzytkownika, setPanelUzytkownika] = useState(false);
 
   const odswiez = useCallback(async () => {
     try {
-      const [r, p] = await Promise.all([fetch('/api/rozmowy'), fetch('/api/pliki')]);
+      const r = await fetch('/api/rozmowy');
       if (r.ok) setHistoria((await r.json()).rozmowy ?? []);
-      if (p.ok) setPliki((await p.json()).pliki ?? []);
     } catch { /* panel boczny nie moze wywrocic aplikacji */ }
-  }, []);
-
-  // Umiejetnosci pobieramy raz: lista zmienia sie tylko przy zmianie konfiguracji agenta.
-  useEffect(() => {
-    fetch('/api/umiejetnosci')
-      .then(async (r) => (r.ok ? ((await r.json()).umiejetnosci ?? []) : []))
-      .then((lista: Umiejetnosc[]) =>
-        setSkille(
-          [...lista].sort((a, b) => {
-            const wa = NASZE.includes(a.name ?? '') ? 0 : 1;
-            const wb = NASZE.includes(b.name ?? '') ? 0 : 1;
-            return wa - wb || (a.name ?? '').localeCompare(b.name ?? '', 'pl');
-          }),
-        ),
-      )
-      .catch(() => { /* brak listy nie moze zablokowac panelu */ });
   }, []);
 
   useEffect(() => {
@@ -75,35 +61,32 @@ function TrescNawigacji() {
 
   useEffect(() => setOtwarte(false), [sciezka, aktywnaRozmowa]);
 
-  async function wgraj(plik: File) {
-    setWgrywa(true);
-    try {
-      const dane = new FormData();
-      dane.append('plik', plik);
-      await fetch('/api/pliki', { method: 'POST', body: dane });
-      await odswiez();
-      window.dispatchEvent(new CustomEvent('pkb-odswiez'));
-    } finally {
-      setWgrywa(false);
-      if (plikRef.current) plikRef.current.value = '';
-    }
-  }
-
   async function usunRozmowe(id: string) {
     await fetch('/api/rozmowy', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
     await odswiez();
-    if (aktywnaRozmowa === id) router.push('/');
+    if (aktywnaRozmowa === id) nowaRozmowa();
   }
 
-  async function usunPlik(nazwa: string) {
-    await fetch('/api/pliki', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nazwa }) });
-    await odswiez();
-    window.dispatchEvent(new CustomEvent('pkb-odswiez'));
-  }
+  /**
+   * Nowa rozmowa naprawde zaczyna od zera.
+   * Samo przejscie pod "/" nie wystarczalo: gdy prezes juz tam byl, nic sie nie dzialo.
+   * Dlatego dodatkowo wysylamy sygnal, na ktory ekran czatu czysci watek.
+   */
+  const nowaRozmowa = useCallback(() => {
+    router.push('/');
+    window.dispatchEvent(new CustomEvent('pkb-nowa-rozmowa'));
+    setOtwarte(false);
+  }, [router]);
+
+  const znalezione = useMemo(() => {
+    const q = szukaj.trim().toLowerCase();
+    if (!q) return historia;
+    return historia.filter((r) => r.tytul.toLowerCase().includes(q));
+  }, [historia, szukaj]);
 
   const pozycjaKlasa = (aktywna: boolean) =>
-    `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] transition-colors ${
-      aktywna ? 'bg-pkb-surface text-pkb-gold' : 'text-pkb-muted hover:bg-pkb-surface/60 hover:text-pkb-text'
+    `flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] transition-colors duration-150 ${
+      aktywna ? 'bg-pkb-active text-pkb-gold' : 'text-pkb-muted hover:bg-pkb-hover hover:text-pkb-text'
     }`;
 
   return (
@@ -124,177 +107,116 @@ function TrescNawigacji() {
           otwarte ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
       >
-        <div className="px-5 pb-3 pt-5">
+        <div className="shrink-0 px-5 pb-3 pt-5">
           <LogoPKB szerokosc={162} />
         </div>
 
-        <div className="mx-4 flex items-center gap-3 rounded-xl border border-pkb-border-soft bg-pkb-surface/60 px-3 py-2.5">
+        <button
+          onClick={() => setPanelUzytkownika(true)}
+          className="mx-4 flex shrink-0 items-center gap-3 rounded-xl border border-pkb-border-soft bg-pkb-surface/60 px-3 py-2.5 text-left transition hover:border-pkb-copper/60 hover:bg-pkb-hover"
+        >
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-pkb-copper/20 text-[13px] font-semibold text-pkb-gold">RR</span>
-          <span className="min-w-0 leading-tight">
+          <span className="min-w-0 flex-1 leading-tight">
             <span className="block truncate text-[13.5px] font-medium">Radosław Rogiewicz</span>
             <span className="block text-[11.5px] text-pkb-faint">Prezes PKB</span>
           </span>
-        </div>
+          <I d="M6 9l6 6 6-6" />
+        </button>
 
-        <div className="px-3 pt-4">
-          <Link href="/" className="flex items-center justify-center gap-2 rounded-lg bg-pkb-gold px-3 py-2.5 text-[13.5px] font-medium text-pkb-bg transition hover:bg-pkb-gold-strong">
+        <div className="shrink-0 px-3 pt-4">
+          <button
+            onClick={nowaRozmowa}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-pkb-gold px-3 py-2.5 text-[13.5px] font-medium text-pkb-bg transition hover:bg-pkb-gold-strong"
+          >
             <I d="M12 5v14M5 12h14" />
             Nowa rozmowa
-          </Link>
+          </button>
         </div>
 
-        {/* Stale pozycje nawigacji */}
-        <nav className="px-3 pt-4">
-          <p className="px-3 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-pkb-faint">Asystent</p>
-          <ul className="flex flex-col gap-0.5">
-            <li>
-              <Link href="/" className={pozycjaKlasa(sciezka === '/' && !aktywnaRozmowa)}>
-                <I d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                Rozmowa
-              </Link>
-            </li>
-            <li>
-              <Link href="/umiejetnosci" className={pozycjaKlasa(sciezka === '/umiejetnosci')}>
-                <I d="M12 2v4m0 12v4M2 12h4m12 0h4M5 5l2.8 2.8m8.4 8.4L19 19M19 5l-2.8 2.8m-8.4 8.4L5 19" />
-                Rozwój asystenta
-              </Link>
-            </li>
-            <li>
-              <Link href="/poczta" className={pozycjaKlasa(sciezka === '/poczta')}>
-                <I d="M4 4h16v16H4zM4 7l8 6 8-6" />
-                Poczta
-              </Link>
-            </li>
-            <li>
-              <Link href="/ustawienia" className={pozycjaKlasa(sciezka === '/ustawienia')}>
-                <I d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                Ustawienia
-              </Link>
-            </li>
-          </ul>
+        {/* Szukanie w historii. Im dluzej prezes korzysta, tym wazniejsze. */}
+        <div className="relative shrink-0 px-3 pt-3">
+          <span className="pointer-events-none absolute left-6 top-1/2 -translate-y-1/2 text-pkb-faint">
+            <svg viewBox="0 0 24 24" className="size-[15px]" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+          </span>
+          <input
+            value={szukaj}
+            onChange={(e) => setSzukaj(e.target.value)}
+            placeholder="Szukaj w rozmowach"
+            aria-label="Szukaj w rozmowach"
+            className="w-full rounded-lg border border-pkb-border-soft bg-pkb-surface/50 py-2 pl-9 pr-8 text-[13px] outline-none transition-colors placeholder:text-pkb-faint focus:border-pkb-copper"
+          />
+          {szukaj ? (
+            <button
+              onClick={() => setSzukaj('')}
+              aria-label="Wyczyść"
+              className="absolute right-6 top-1/2 -translate-y-1/2 text-pkb-faint transition hover:text-pkb-text"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+
+        {/* Historia rozmow: jedyna rzecz, ktora rosnie, wiec tylko ona sie przewija. */}
+        <nav className="mt-3 min-h-0 flex-1 overflow-y-auto px-3 pb-2" aria-label="Historia rozmów">
+          {znalezione.length === 0 ? (
+            <p className="px-3 py-4 text-[12.5px] leading-relaxed text-pkb-faint">
+              {szukaj ? 'Nic nie pasuje do tego, czego szukasz.' : 'Tu pojawią się rozmowy i briefy o firmach.'}
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-0.5">
+              {znalezione.map((r) => (
+                <li key={r.id} className="group relative">
+                  <Link
+                    href={`/?rozmowa=${r.id}`}
+                    className={`block rounded-lg py-2 pl-3 pr-9 transition-colors duration-150 ${
+                      aktywnaRozmowa === r.id
+                        ? 'bg-pkb-active text-pkb-gold'
+                        : 'text-pkb-muted hover:bg-pkb-hover hover:text-pkb-text'
+                    }`}
+                  >
+                    <span className="block truncate text-[13px]">{r.tytul}</span>
+                    <span className="block text-[11px] text-pkb-faint">{kiedy(r.zmieniona)}</span>
+                  </Link>
+                  <button
+                    onClick={() => void usunRozmowe(r.id)}
+                    aria-label={`Usuń rozmowę: ${r.tytul}`}
+                    className="absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg text-pkb-faint opacity-0 transition group-hover:opacity-100 hover:text-red-300 focus-visible:opacity-100"
+                  >
+                    <I d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </nav>
 
-        {/* Rozmowy, dokumenty i umiejetnosci */}
-        <div className="mt-4 flex gap-1 px-3">
-          {([
-            ['rozmowy', 'Rozmowy', historia.length],
-            ['dokumenty', 'Dokumenty', pliki.length],
-            ['skille', 'Skille', skille.length],
-          ] as const).map(([s, etykieta, ile]) => (
-            <button
-              key={s}
-              onClick={() => setSekcja(s)}
-              className={`flex-1 rounded-lg px-1.5 py-1.5 text-[12px] transition ${
-                sekcja === s ? 'bg-pkb-surface text-pkb-gold' : 'text-pkb-muted hover:bg-pkb-surface/60'
-              }`}
-            >
-              {etykieta}
-              {ile > 0 ? <span className="ml-1 text-pkb-faint">{ile}</span> : null}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-2 flex-1 overflow-y-auto px-3 pb-3">
-          {sekcja === 'rozmowy' ? (
-            historia.length === 0 ? (
-              <p className="px-3 py-4 text-[12.5px] leading-relaxed text-pkb-faint">Tu pojawią się rozmowy i briefy o firmach.</p>
-            ) : (
-              <ul className="flex flex-col gap-0.5">
-                {historia.map((r) => (
-                  <li key={r.id} className="group flex items-center gap-1">
-                    <Link
-                      href={`/?rozmowa=${r.id}`}
-                      className={`min-w-0 flex-1 rounded-lg px-3 py-2 transition ${
-                        aktywnaRozmowa === r.id ? 'bg-pkb-surface text-pkb-gold' : 'text-pkb-muted hover:bg-pkb-surface/60 hover:text-pkb-text'
-                      }`}
-                    >
-                      <span className="block truncate text-[13px]">{r.tytul}</span>
-                      <span className="block text-[11px] text-pkb-faint">{kiedy(r.zmieniona)}</span>
-                    </Link>
-                    <button onClick={() => void usunRozmowe(r.id)} aria-label={`Usuń rozmowę: ${r.tytul}`} className="grid size-7 shrink-0 place-items-center rounded-lg text-pkb-faint opacity-0 transition group-hover:opacity-100 hover:text-red-300 focus-visible:opacity-100">
-                      <I d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )
-          ) : sekcja === 'skille' ? (
-            skille.length === 0 ? (
-              <p className="px-3 py-4 text-[12.5px] leading-relaxed text-pkb-faint">Wczytuję umiejętności asystenta...</p>
-            ) : (
-              <>
-                <ul className="flex flex-col gap-0.5">
-                  {skille.map((u) => (
-                    <li key={u.name}>
-                      <Link
-                        href="/umiejetnosci"
-                        className="flex items-start gap-2.5 rounded-lg px-3 py-2 text-pkb-muted transition hover:bg-pkb-surface/60 hover:text-pkb-text"
-                      >
-                        <span
-                          className={`mt-[7px] size-1.5 shrink-0 rounded-full ${
-                            NASZE.includes(u.name ?? '') ? 'bg-pkb-gold' : 'bg-pkb-copper/40'
-                          }`}
-                        />
-                        <span className="min-w-0">
-                          <span className="block truncate text-[13px]">{u.name}</span>
-                          {u.description ? (
-                            <span className="block truncate text-[11px] text-pkb-faint">{u.description}</span>
-                          ) : null}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/umiejetnosci" className="mt-2 block px-3 py-2 text-[12px] text-pkb-muted underline underline-offset-4 transition hover:text-pkb-gold">
-                  Zobacz pełne opisy
+        <div className="shrink-0 border-t border-pkb-border-soft px-3 py-2">
+          <ul className="flex flex-col gap-0.5">
+            {POZYCJE.map((p) => (
+              <li key={p.adres}>
+                <Link href={p.adres} className={pozycjaKlasa(sciezka === p.adres)}>
+                  <I d={p.ikona} />
+                  {p.nazwa}
                 </Link>
-              </>
-            )
-          ) : (
-            <>
-              <input ref={plikRef} type="file" className="sr-only" onChange={(e) => { const p = e.target.files?.[0]; if (p) void wgraj(p); }} accept=".pdf,.txt,.md,.csv,.docx,.xlsx,.png,.jpg,.jpeg,.webp,.html" />
-              <button onClick={() => plikRef.current?.click()} disabled={wgrywa} className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-pkb-border px-3 py-2.5 text-[12.5px] text-pkb-muted transition hover:border-pkb-copper hover:text-pkb-gold disabled:opacity-50">
-                <I d="M12 5v14M5 12h14" />
-                {wgrywa ? 'Wgrywam...' : 'Dodaj dokument'}
-              </button>
-              {pliki.length === 0 ? (
-                <p className="px-3 py-2 text-[12.5px] leading-relaxed text-pkb-faint">Wgraj umowę albo notatkę, potem po prostu o nią zapytaj.</p>
-              ) : (
-                <ul className="flex flex-col gap-0.5">
-                  {pliki.map((p) => (
-                    <li key={p.nazwa} className="group flex items-center gap-1">
-                      <button onClick={() => window.dispatchEvent(new CustomEvent('pkb-podglad', { detail: p.nazwa }))} className="min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-pkb-muted transition hover:bg-pkb-surface/60 hover:text-pkb-text">
-                        <span className="block truncate text-[13px]">{p.nazwa}</span>
-                        <span className="block text-[11px] text-pkb-faint">{Math.max(1, Math.round(p.rozmiar / 1024))} KB</span>
-                      </button>
-                      <button onClick={() => window.dispatchEvent(new CustomEvent('pkb-dolacz', { detail: p.nazwa }))} aria-label={`Dołącz ${p.nazwa}`} title="Dołącz do rozmowy" className="grid size-7 shrink-0 place-items-center rounded-lg text-pkb-faint transition hover:text-pkb-gold">
-                        <I d="M12 5v14M5 12h14" />
-                      </button>
-                      <button onClick={() => void usunPlik(p.nazwa)} aria-label={`Usuń ${p.nazwa}`} className="grid size-7 shrink-0 place-items-center rounded-lg text-pkb-faint opacity-0 transition group-hover:opacity-100 hover:text-red-300 focus-visible:opacity-100">
-                        <I d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="border-t border-pkb-border-soft px-3 py-2.5">
-          <a href="https://simplefast.ai" target="_blank" rel="noopener noreferrer" className="block px-3 text-[11px] text-pkb-faint transition hover:text-pkb-copper">
+              </li>
+            ))}
+          </ul>
+          <a
+            href="https://simplefast.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 block px-3 py-1.5 text-[11px] text-pkb-faint transition hover:text-pkb-copper"
+          >
             zasilany przez SimpleFast AI
           </a>
         </div>
       </aside>
+
+      {panelUzytkownika ? <PanelUzytkownika zamknij={() => setPanelUzytkownika(false)} /> : null}
     </>
   );
 }
 
-/**
- * Szkielet panelu na pierwsza klatke. Bez niego prezes widzi czarny ekran,
- * bo caly panel jest komponentem klienckim i czeka na wczytanie skryptow.
- */
 function SzkieletPanelu() {
   return (
     <>
@@ -309,11 +231,6 @@ function SzkieletPanelu() {
         <div className="mx-4 h-[58px] rounded-xl border border-pkb-border-soft bg-pkb-surface/60" />
         <div className="px-3 pt-4">
           <div className="h-[42px] rounded-lg bg-pkb-gold/80" />
-        </div>
-        <div className="flex flex-col gap-1.5 px-3 pt-6" aria-hidden>
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-[38px] rounded-lg bg-pkb-surface/40" />
-          ))}
         </div>
       </aside>
     </>
