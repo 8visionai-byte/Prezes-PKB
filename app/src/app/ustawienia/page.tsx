@@ -3,13 +3,15 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Proza } from '@/components/Proza';
+import { Powiadomienia } from '@/components/Powiadomienia';
 import { useUstawienia } from '@/lib/ustawienia';
 
-type Zakladka = 'wyglad' | 'asystent' | 'umiejetnosci' | 'mikrofon' | 'o-aplikacji';
+type Zakladka = 'wyglad' | 'asystent' | 'powiadomienia' | 'umiejetnosci' | 'mikrofon' | 'o-aplikacji';
 
 const ZAKLADKI: { id: Zakladka; nazwa: string }[] = [
   { id: 'wyglad', nazwa: 'Wygląd' },
   { id: 'asystent', nazwa: 'Asystent' },
+  { id: 'powiadomienia', nazwa: 'Powiadomienia' },
   { id: 'umiejetnosci', nazwa: 'Umiejętności' },
   { id: 'mikrofon', nazwa: 'Mikrofon' },
   { id: 'o-aplikacji', nazwa: 'O aplikacji' },
@@ -475,33 +477,8 @@ function Mikrofon() {
 /* ---------- O aplikacji ---------- */
 
 function OAplikacji() {
-  const [zgoda, setZgoda] = useState('sprawdzam');
-
-  useEffect(() => {
-    if (typeof Notification === 'undefined') {
-      setZgoda('brak w tej przeglądarce');
-      return;
-    }
-    setZgoda(
-      Notification.permission === 'granted'
-        ? 'włączone'
-        : Notification.permission === 'denied'
-          ? 'zablokowane w przeglądarce'
-          : 'jeszcze niewłączone',
-    );
-  }, []);
-
   return (
     <div className="flex flex-col gap-5">
-      <Karta>
-        <p className="text-[14.5px] font-medium">
-          Powiadomienia: <span className="text-pkb-gold">{zgoda}</span>
-        </p>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-pkb-muted">
-          Gdy asystent skończy dłuższą pracę, dostaniesz powiadomienie nawet przy zamkniętej
-          aplikacji. Włącza się dzwonkiem na ekranie rozmowy.
-        </p>
-      </Karta>
       <Karta>
         <p className="text-[13.5px] leading-relaxed text-pkb-muted">
           Asystent Prezesa Partnerskich Klubów Biznesu. Silnik i dane stoją na własnym serwerze
@@ -554,6 +531,7 @@ function TrescUstawien() {
       <div className="mt-6">
         {aktywna === 'wyglad' ? <Wyglad /> : null}
         {aktywna === 'asystent' ? <Asystent /> : null}
+        {aktywna === 'powiadomienia' ? <Powiadomienia wariant="ustawienia" /> : null}
         {aktywna === 'umiejetnosci' ? <Umiejetnosci /> : null}
         {aktywna === 'mikrofon' ? <Mikrofon /> : null}
         {aktywna === 'o-aplikacji' ? <OAplikacji /> : null}

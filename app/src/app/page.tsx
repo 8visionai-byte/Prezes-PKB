@@ -6,7 +6,6 @@ import { Proza } from '@/components/Proza';
 import { PodgladPliku } from '@/components/PodgladPliku';
 import { TytulPowitalny } from '@/components/TytulPowitalny';
 import { Pandy } from '@/components/Pandy';
-import { Powiadomienia } from '@/components/Powiadomienia';
 import { KartaPliku } from '@/components/KartaPliku';
 import { PasekNagrywania, PrzyciskMikrofonu } from '@/components/PasekNagrywania';
 import { useDyktowanie } from '@/lib/dyktowanie';
@@ -193,13 +192,12 @@ function Czat() {
     <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 lg:px-8">
       {/* Napis, pasek z pandami i dzwonek. Na telefonie pandy schodza pod tytul,
           na duzym ekranie ida obok niego i wypelniaja wolne miejsce. */}
+      {/* Dzwonek powiadomien przeniesiony do ustawien: w naglowku byl ciasny
+          i nie bylo miejsca, zeby wyjasnic, po co go wlaczac. */}
       <header className="flex flex-wrap items-center gap-x-5 gap-y-1 py-4 lg:py-6">
         <TytulPowitalny />
-        <div className="order-3 min-w-0 basis-full lg:order-2 lg:basis-0 lg:grow">
+        <div className="min-w-0 basis-full lg:basis-0 lg:grow">
           <Pandy />
-        </div>
-        <div className="order-2 ml-auto lg:order-3 lg:ml-0">
-          <Powiadomienia />
         </div>
       </header>
 

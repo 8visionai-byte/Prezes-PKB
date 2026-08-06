@@ -12,7 +12,7 @@ function doTablicy(base64: string) {
 
 type Stan = 'sprawdzam' | 'niedostepne' | 'wylaczone' | 'wlaczone' | 'odmowa';
 
-export function Powiadomienia() {
+export function Powiadomienia({ wariant = 'przycisk' }: { wariant?: 'przycisk' | 'ustawienia' }) {
   const [stan, setStan] = useState<Stan>('sprawdzam');
   const [pracuje, setPracuje] = useState(false);
 
@@ -83,6 +83,52 @@ export function Powiadomienia() {
     } finally {
       setPracuje(false);
     }
+  }
+
+  // Wariant "ustawienia": pelny wiersz z wyjasnieniem, do panelu ustawien.
+  if (wariant === 'ustawienia') {
+    const wl = stan === 'wlaczone';
+    return (
+      <div className="rounded-2xl border border-pkb-border-soft bg-pkb-surface/40 px-5 py-4">
+        <div className="flex items-start gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[14.5px] font-medium">Powiadamiaj mnie, gdy asystent skończy</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-pkb-muted">
+              Zadajesz pytanie, zamykasz aplikację i idziesz na spotkanie. Asystent pracuje dalej,
+              a gdy skończy, dostajesz sygnał na telefon. Bez tego trzeba trzymać aplikację otwartą.
+            </p>
+            {stan === 'odmowa' ? (
+              <p className="mt-2 text-[12.5px] text-red-200">
+                Przeglądarka blokuje powiadomienia dla tej strony. Odblokuj je w jej ustawieniach,
+                inaczej nie da się tego włączyć.
+              </p>
+            ) : null}
+            {stan === 'niedostepne' ? (
+              <p className="mt-2 text-[12.5px] text-pkb-faint">
+                Ta przeglądarka nie obsługuje powiadomień. Na iPhonie działają dopiero po dodaniu
+                aplikacji do ekranu głównego.
+              </p>
+            ) : null}
+          </div>
+          <button
+            role="switch"
+            aria-checked={wl}
+            aria-label="Powiadomienia"
+            disabled={pracuje || stan === 'odmowa' || stan === 'niedostepne' || stan === 'sprawdzam'}
+            onClick={() => void (wl ? wylacz() : wlacz())}
+            className={`relative h-[26px] w-[46px] shrink-0 rounded-full border transition-colors duration-200 disabled:opacity-40 ${
+              wl ? 'border-pkb-gold bg-pkb-gold/85' : 'border-pkb-border bg-pkb-surface-2'
+            }`}
+          >
+            <span
+              className={`absolute top-[3px] size-[18px] rounded-full transition-all duration-200 ${
+                wl ? 'left-[23px] bg-pkb-bg' : 'left-[3px] bg-pkb-muted'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (stan === 'sprawdzam' || stan === 'niedostepne') return null;

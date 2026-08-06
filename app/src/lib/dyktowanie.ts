@@ -36,6 +36,7 @@ export function useDyktowanie(naTekst: (tekst: string) => void) {
   const porzucone = useRef(false);
   const animacja = useRef(0);
   const zegar = useRef<number | null>(null);
+  const slupki = useRef<number | null>(null);
 
   useEffect(() => {
     const maSprzet =
@@ -55,6 +56,8 @@ export function useDyktowanie(naTekst: (tekst: string) => void) {
     animacja.current = 0;
     if (zegar.current) window.clearInterval(zegar.current);
     zegar.current = null;
+    if (slupki.current) window.clearInterval(slupki.current);
+    slupki.current = null;
     strumienRef.current?.getTracks().forEach((t) => t.stop());
     strumienRef.current = null;
     void kontekstRef.current?.close().catch(() => {});
@@ -125,15 +128,24 @@ export function useDyktowanie(naTekst: (tekst: string) => void) {
       kontekst.createMediaStreamSource(strumien).connect(analizator);
       const probki = new Uint8Array(analizator.frequencyBinCount);
 
+      // Nowy slupek co 110 ms, nie co klatke. Przy 40 slupkach fala przechodzi
+      // przez caly pasek w ok. 4,5 sekundy, czyli spokojnie, jak w ChatGPT.
+      // Wczesniej dokladalismy slupek 60 razy na sekunde i wszystko smigalo.
+      let szczyt = 0;
       const mierz = () => {
         analizator.getByteTimeDomainData(probki);
         let suma = 0;
         for (const v of probki) suma += Math.abs(v - 128);
-        const poziom = Math.min(1, suma / probki.length / 26);
-        setPoziomy((p) => [...p.slice(1), poziom]);
+        // Bierzemy najglosniejszy moment miedzy slupkami, zeby nie zgubic sylab.
+        szczyt = Math.max(szczyt, Math.min(1, suma / probki.length / 26));
         animacja.current = requestAnimationFrame(mierz);
       };
       animacja.current = requestAnimationFrame(mierz);
+
+      slupki.current = window.setInterval(() => {
+        setPoziomy((p) => [...p.slice(1), szczyt]);
+        szczyt = 0;
+      }, 110);
 
       rec.start();
       rejestrator.current = rec;
