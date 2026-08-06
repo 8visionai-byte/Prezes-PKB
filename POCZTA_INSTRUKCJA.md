@@ -66,11 +66,23 @@ Wtedy wszystko poniżej ląduje w niewłaściwym projekcie.
 1. Wejdź na https://console.cloud.google.com/auth/overview
 2. Jeśli zobaczysz „Google Auth platform not configured yet", kliknij **Rozpocznij**
    (Get Started). Kreator ma cztery ekrany:
-   - **App Information**: nazwa aplikacji `Asystent Prezesa PKB`,
-     „User support email" to Twój testowy adres. Dalej.
-   - **Audience**: wybierz **Zewnętrzny** (External). Dalej.
-   - **Contact Information**: Twój testowy adres. Dalej.
-   - **Finish**: zaznacz zgodę na zasady Google, **Kontynuuj**, potem **Utwórz**.
+   - **Informacje o aplikacji**: nazwa `Asystent Prezesa PKB`, adres e-mail wsparcia.
+   - **Odbiorcy**: wybierz **Z zewnątrz** (External). Dalej.
+   - **Dane kontaktowe**: Twój adres. Dalej.
+   - **Zakończ**: zaznacz zgodę na zasady Google, **Kontynuuj**, potem **Utwórz**.
+
+### Dwie rzeczy, które tu mylą
+
+**Adres e-mail wsparcia da się wybrać tylko jeden: ten, na którym jesteś zalogowany
+w konsoli** (albo grupa Google, którą zarządzasz). To NIE jest wybór skrzynki, z której
+asystent będzie wysyłał. To tylko adres kontaktowy pokazywany na ekranie zgody.
+Skrzynkę wybierasz dopiero w kroku 8, klikając „Podłącz skrzynkę" i wskazując konto Google.
+Możesz więc mieć projekt na jednym koncie, a podłączyć zupełnie inną skrzynkę.
+
+**„Z zewnątrz" NIE znaczy, że dostęp ma każdy.** Dopóki status publikacji to Testing,
+aplikacji może użyć WYŁĄCZNIE konto z listy użytkowników testowych. Nikt inny nie wejdzie,
+nawet znając adres. „Wewnętrzny" jest tylko dla projektów w organizacji Google Workspace,
+więc na zwykłym koncie gmail.com ta opcja nie zadziała.
 
 ## Krok 4: dopisz siebie jako użytkownika testowego
 
@@ -79,7 +91,11 @@ Bez tego Google w ogóle nie wpuści Cię na ekran zgody.
 1. Wejdź na https://console.cloud.google.com/auth/audience
 2. Status publikacji zostaw na **Testing**.
 3. W sekcji **Użytkownicy testowi** kliknij **Dodaj użytkowników**.
-4. Wpisz swój testowy adres Gmail. Zapisz.
+4. Wpisz **każdy adres, z którego chcesz wysyłać**: konto właściciela projektu ORAZ
+   testową skrzynkę „testy AI". Zapisz.
+
+To jest lista wpuszczonych. Konto spoza niej dostanie `access_blocked` i nie zobaczy
+nawet ekranu zgody. Docelowo trafi tu adres Radka.
 
 ## Krok 5: dodaj jedno uprawnienie
 
