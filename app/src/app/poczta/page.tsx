@@ -2,7 +2,8 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Dyktafon } from '@/components/Dyktafon';
+import { PasekNagrywania, PrzyciskMikrofonu } from '@/components/PasekNagrywania';
+import { useDyktowanie } from '@/lib/dyktowanie';
 
 type Draft = {
   id: string;
@@ -39,6 +40,11 @@ function KartaDraftu({ d, odswiez }: { d: Draft; odswiez: () => void }) {
   const [pracuje, setPracuje] = useState(false);
   const [blad, setBlad] = useState<string | null>(null);
   const [zapisano, setZapisano] = useState(false);
+
+  const dyktowanie = useDyktowanie((rozpoznane) =>
+    setTresc((t) => (t.trim() ? `${t.trim()}\n\n${rozpoznane}` : rozpoznane)),
+  );
+  const nagrywamy = dyktowanie.stan === 'nagrywa' || dyktowanie.stan === 'rozpoznaje';
 
   const zmienione = adresat !== d.do || temat !== d.temat || tresc !== d.tresc;
 
@@ -140,19 +146,31 @@ function KartaDraftu({ d, odswiez }: { d: Draft; odswiez: () => void }) {
 
       <div className="mt-3 flex items-center gap-2">
         <label className="block text-[11.5px] uppercase tracking-wider text-pkb-faint">Treść</label>
-        <span className="ml-auto flex items-center gap-2">
-          <Dyktafon
-            etykieta="Podyktuj treść maila"
-            naTekst={(rozpoznane) => setTresc((t) => (t.trim() ? `${t.trim()}\n\n${rozpoznane}` : rozpoznane))}
-          />
-        </span>
+        {dyktowanie.stan === 'gotowy' ? (
+          <span className="ml-auto">
+            <PrzyciskMikrofonu etykieta="Podyktuj treść maila" start={() => void dyktowanie.start()} />
+          </span>
+        ) : null}
       </div>
-      <textarea
-        value={tresc}
-        onChange={(e) => setTresc(e.target.value)}
-        rows={Math.min(16, Math.max(6, tresc.split('\n').length + 1))}
-        className="mt-1 w-full resize-y rounded-lg border border-pkb-border bg-pkb-bg/60 px-3 py-2 text-[14px] leading-relaxed outline-none transition-colors focus:border-pkb-copper"
-      />
+      {nagrywamy ? (
+        <PasekNagrywania
+          poziomy={dyktowanie.poziomy}
+          sekundy={dyktowanie.sekundy}
+          rozpoznaje={dyktowanie.stan === 'rozpoznaje'}
+          anuluj={dyktowanie.anuluj}
+          zatwierdz={dyktowanie.zatwierdz}
+        />
+      ) : (
+        <textarea
+          value={tresc}
+          onChange={(e) => setTresc(e.target.value)}
+          rows={Math.min(16, Math.max(6, tresc.split('\n').length + 1))}
+          className="mt-1 w-full resize-y rounded-lg border border-pkb-border bg-pkb-bg/60 px-3 py-2 text-[14px] leading-relaxed outline-none transition-colors focus:border-pkb-copper"
+        />
+      )}
+      {dyktowanie.blad ? (
+        <p role="alert" className="mt-2 text-[12.5px] text-red-200">{dyktowanie.blad}</p>
+      ) : null}
 
       {blad ? (
         <p role="alert" className="mt-3 rounded-lg border border-red-900/50 bg-red-950/30 px-3 py-2 text-[13px] text-red-200">

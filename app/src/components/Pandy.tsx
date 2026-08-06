@@ -41,20 +41,7 @@ const KROJ: Record<string, string[]> = {
   B: ['110', '101', '110', '101', '110'],
 };
 
-/**
- * Ikonka uścisku, rysowana pikselami w tym samym stylu co pandy.
- * Górna połowa w złocie, dolna w miedzi, przerwa w środku to miejsce złączenia:
- * dwie strony, które trzymają się razem. Zastąpiła emoji, które odstawało od reszty.
- */
-const IKONA_USCISKU = [
-  '..111..',
-  '.11111.',
-  '111.111',
-  '222.222',
-  '.22222.',
-  '..222..',
-];
-
+/** Piłka nożna. Prezes jest z nią związany, więc PKB żongluje nią NOGĄ, nie łapą. */
 const PILKA = ['.##.', '####', '####', '.##.'];
 
 const szerokoscNapisu = (napis: string) => napis.length * 4 - 1;
@@ -104,6 +91,7 @@ function panda(
   krok: boolean,
   lapa: 'dol' | 'przod' | 'gora',
   p: Paleta,
+  kopie = false,
 ) {
   const px = (dx: number, dy: number, w: number, h: number, kolor: string) => {
     ctx.fillStyle = kolor;
@@ -126,8 +114,15 @@ function panda(
   else if (lapa === 'przod') px(8, 6, 2, 2, p.czern);
   else px(8, 7, 2, 2, p.czern);
 
-  px(2, 11, 2, krok ? 2 : 1, p.czern); // nogi
-  px(6, 11, 2, krok ? 1 : 2, p.czern);
+  if (kopie) {
+    // Noga wysunieta do przodu, tuz pod pilka. Druga stoi na ziemi.
+    px(2, 11, 2, 2, p.czern);
+    px(6, 11, 2, 1, p.czern);
+    px(8, 11, 2, 1, p.czern); // stopa
+  } else {
+    px(2, 11, 2, krok ? 2 : 1, p.czern); // nogi
+    px(6, 11, 2, krok ? 1 : 2, p.czern);
+  }
 }
 
 /** Biurko z monitorem. Ekran migocze, wiec widac, ze cos sie tam dzieje. */
@@ -222,7 +217,6 @@ export function Pandy() {
         kierP = 1;
         przyPracy = true;
         lapaL = Math.floor(t / 180) % 2 === 0 ? 'przod' : 'dol';
-        lapaP = Math.sin(t / 190) > 0 ? 'przod' : 'dol';
       } else if (t < ZEJSCIE_DO) {
         const k = gladko((t - PRACA_DO) / (ZEJSCIE_DO - PRACA_DO));
         xl = stacjaL + (spotL - stacjaL) * k;
@@ -253,7 +247,6 @@ export function Pandy() {
         kierP = 1;
         przyPracy = true;
         lapaL = Math.floor(t / 180) % 2 === 0 ? 'przod' : 'dol';
-        lapaP = Math.sin(t / 190) > 0 ? 'przod' : 'dol';
       }
 
       if (lapa !== 'dol') {
@@ -261,12 +254,15 @@ export function Pandy() {
         lapaP = lapa;
       }
 
+      // Zongolerka: 0 = pilka na stopie, 1 = pilka w gorze.
+      const odbicie = Math.abs(Math.sin(t / 230));
+      const kopie = przyPracy && jestMiejsce && odbicie < 0.3;
+
       // rekwizyty za pandami
       if (jestMiejsce) {
         komputer(ctx, komputerX, p, Math.floor(t / 220) % 2 === 0);
         if (przyPracy) {
-          const wysokosc = Math.abs(Math.sin(t / 190)) * 7;
-          bitmapa(ctx, PILKA, pilkaX, ZIEMIA - 4 - wysokosc, { '#': p.akcent });
+          bitmapa(ctx, PILKA, pilkaX, ZIEMIA - 5 - odbicie * 8, { '#': p.akcent });
         } else {
           bitmapa(ctx, PILKA, pilkaX, ZIEMIA - 4, { '#': p.miedz });
         }
@@ -275,7 +271,7 @@ export function Pandy() {
       const krok = idzie ? Math.floor(t / 130) % 2 === 0 : false;
 
       panda(ctx, xl, GORA_PANDY, kierL, krok, lapaL, p);
-      panda(ctx, xp, GORA_PANDY, kierP, krok, lapaP, p);
+      panda(ctx, xp, GORA_PANDY, kierP, krok, lapaP, p, kopie);
 
       // złączone łapy: przy uniesieniu wędrują w górę
       if (lapa !== 'dol') {
@@ -284,9 +280,12 @@ export function Pandy() {
         ctx.fillRect(spotL + 9, yl, spotP - spotL - 8, 2);
       }
 
-      // ikonki uścisku ulatują nad pandami, rysowane PRZED napisami,
-      // więc przelatują za nimi i nie zasłaniają SFAI ani PKB
+      // Ikonki uścisku ulatują nad pandami. Rysowane PRZED napisami, więc przelatują
+      // za nimi i nie zasłaniają SFAI ani PKB.
       if (t >= DOTKNIECIE && t < POWROT_DO) {
+        ctx.font = '5px ui-sans-serif, system-ui, "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         for (const opoznienie of [0, 520, 1040]) {
           const wiek = t - DOTKNIECIE - opoznienie;
           if (wiek < 0 || wiek > 1600) continue;
@@ -294,7 +293,7 @@ export function Pandy() {
           const y = GORA_PANDY + 1 - k * 13;
           const bok = Math.sin(k * Math.PI * 2) * 1.5;
           ctx.globalAlpha = k < 0.15 ? k / 0.15 : 1 - Math.max(0, (k - 0.5) / 0.5);
-          bitmapa(ctx, IKONA_USCISKU, srodek - 3.5 + bok, y, { '1': p.akcent, '2': p.miedz });
+          ctx.fillText('🤝', srodek + bok, y);
           ctx.globalAlpha = 1;
         }
       }

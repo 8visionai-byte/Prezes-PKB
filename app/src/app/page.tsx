@@ -8,7 +8,8 @@ import { TytulPowitalny } from '@/components/TytulPowitalny';
 import { Pandy } from '@/components/Pandy';
 import { Powiadomienia } from '@/components/Powiadomienia';
 import { KartaPliku } from '@/components/KartaPliku';
-import { Dyktafon } from '@/components/Dyktafon';
+import { PasekNagrywania, PrzyciskMikrofonu } from '@/components/PasekNagrywania';
+import { useDyktowanie } from '@/lib/dyktowanie';
 import { ZachetaPWA } from '@/components/ZachetaPWA';
 
 type Wiadomosc = { rola: 'user' | 'assistant'; tresc: string; pliki?: string[] };
@@ -34,6 +35,26 @@ function Czat() {
   const odpytywanie = useRef<number | null>(null);
 
   const nowyId = () => `r-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const dyktowanie = useDyktowanie((rozpoznane) => {
+    // Dopisujemy do tego, co juz jest w polu. Prezes czyta i poprawia,
+    // nic nie leci do asystenta bez jego klikniecia.
+    setTekst((t) => (t.trim() ? `${t.trim()} ${rozpoznane}` : rozpoznane));
+    poleRef.current?.focus();
+  });
+  const nagrywamy = dyktowanie.stan === 'nagrywa' || dyktowanie.stan === 'rozpoznaje';
+
+  /**
+   * Pole rosnie razem z tekstem. Liczymy wysokosc z ZAWARTOSCI, a nie w obsludze
+   * pisania: inaczej wklejony tekst i tekst z dyktowania nie powiekszaly pola
+   * i prezes widzial tylko dwie linijki.
+   */
+  useEffect(() => {
+    const pole = poleRef.current;
+    if (!pole) return;
+    pole.style.height = 'auto';
+    pole.style.height = `${Math.min(pole.scrollHeight, 280)}px`;
+  }, [tekst]);
 
   useEffect(() => {
     if (!rozmowaZUrl) {
@@ -258,14 +279,30 @@ function Czat() {
           </div>
         ) : null}
 
-        <div className="flex items-end gap-2 rounded-2xl border border-pkb-border bg-pkb-surface/90 p-2 backdrop-blur transition-colors focus-within:border-pkb-copper">
-          <input
-            ref={plikRef}
-            type="file"
-            className="sr-only"
-            onChange={(e) => { const p = e.target.files?.[0]; if (p) void wgrajPlik(p); }}
-            accept=".pdf,.txt,.md,.csv,.docx,.xlsx,.png,.jpg,.jpeg,.webp,.html"
+        {dyktowanie.blad ? (
+          <p role="alert" className="mb-2 rounded-lg border border-red-900/50 bg-red-950/30 px-3 py-2 text-[12.5px] text-red-200">
+            {dyktowanie.blad}
+          </p>
+        ) : null}
+
+        <input
+          ref={plikRef}
+          type="file"
+          className="sr-only"
+          onChange={(e) => { const p = e.target.files?.[0]; if (p) void wgrajPlik(p); }}
+          accept=".pdf,.txt,.md,.csv,.docx,.xlsx,.png,.jpg,.jpeg,.webp,.html"
+        />
+
+        {nagrywamy ? (
+          <PasekNagrywania
+            poziomy={dyktowanie.poziomy}
+            sekundy={dyktowanie.sekundy}
+            rozpoznaje={dyktowanie.stan === 'rozpoznaje'}
+            anuluj={dyktowanie.anuluj}
+            zatwierdz={dyktowanie.zatwierdz}
           />
+        ) : (
+        <div className="flex items-end gap-2 rounded-2xl border border-pkb-border bg-pkb-surface/90 p-2 backdrop-blur transition-colors focus-within:border-pkb-copper">
           <button
             onClick={() => plikRef.current?.click()}
             disabled={wysylaPlik}
@@ -282,11 +319,7 @@ function Czat() {
             ref={poleRef}
             rows={1}
             value={tekst}
-            onChange={(e) => {
-              setTekst(e.target.value);
-              e.target.style.height = 'auto';
-              e.target.style.height = `${Math.min(e.target.scrollHeight, 168)}px`;
-            }}
+            onChange={(e) => setTekst(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -295,16 +328,9 @@ function Czat() {
             }}
             placeholder="Napisz wiadomość albo wklej NIP..."
             aria-label="Treść wiadomości"
-            className="max-h-42 flex-1 resize-none bg-transparent px-1 py-2 text-[15px] outline-none placeholder:text-pkb-faint"
+            className="min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2 text-[15px] leading-relaxed outline-none placeholder:text-pkb-faint"
           />
-          <Dyktafon
-            naTekst={(rozpoznane) => {
-              // Dopisujemy do tego, co juz jest w polu. Prezes czyta i poprawia,
-              // nic nie leci do asystenta bez jego klikniecia.
-              setTekst((t) => (t.trim() ? `${t.trim()} ${rozpoznane}` : rozpoznane));
-              poleRef.current?.focus();
-            }}
-          />
+          {dyktowanie.stan === 'gotowy' ? <PrzyciskMikrofonu start={() => void dyktowanie.start()} /> : null}
           <button
             onClick={() => void wyslij()}
             disabled={pracuje || (!tekst.trim() && zalaczniki.length === 0)}
@@ -314,6 +340,7 @@ function Czat() {
             <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
           </button>
         </div>
+        )}
       </div>
 
       {podglad ? <PodgladPliku nazwa={podglad} zamknij={() => setPodglad(null)} /> : null}
