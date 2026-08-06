@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Dyktafon } from '@/components/Dyktafon';
 
 type Draft = {
   id: string;
@@ -137,7 +138,15 @@ function KartaDraftu({ d, odswiez }: { d: Draft; odswiez: () => void }) {
         className="mt-1 w-full rounded-lg border border-pkb-border bg-pkb-bg/60 px-3 py-2 text-[14px] outline-none transition-colors focus:border-pkb-copper"
       />
 
-      <label className="mt-3 block text-[11.5px] uppercase tracking-wider text-pkb-faint">Treść</label>
+      <div className="mt-3 flex items-center gap-2">
+        <label className="block text-[11.5px] uppercase tracking-wider text-pkb-faint">Treść</label>
+        <span className="ml-auto flex items-center gap-2">
+          <Dyktafon
+            etykieta="Podyktuj treść maila"
+            naTekst={(rozpoznane) => setTresc((t) => (t.trim() ? `${t.trim()}\n\n${rozpoznane}` : rozpoznane))}
+          />
+        </span>
+      </div>
       <textarea
         value={tresc}
         onChange={(e) => setTresc(e.target.value)}
@@ -220,9 +229,22 @@ function TrescPoczty() {
   useEffect(() => {
     const podlaczono = parametry.get('podlaczono');
     const blad = parametry.get('blad');
-    if (podlaczono) setKomunikat({ typ: 'ok', tekst: `Skrzynka ${podlaczono} podłączona.` });
-    else if (blad) setKomunikat({ typ: 'blad', tekst: blad });
+    if (podlaczono !== null) {
+      setKomunikat({ typ: 'ok', tekst: podlaczono ? `Skrzynka ${podlaczono} podłączona.` : 'Skrzynka podłączona.' });
+    } else if (blad) setKomunikat({ typ: 'blad', tekst: blad });
   }, [parametry]);
+
+  /** Prezes chce napisac maila sam, bez pytania asystenta. */
+  async function nowyMail() {
+    const r = await fetch('/api/poczta', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) {
+      setKomunikat({ typ: 'blad', tekst: d.error ?? 'Nie udało się utworzyć wiadomości.' });
+      return;
+    }
+    setKomunikat(null);
+    await odswiez();
+  }
 
   async function odlacz() {
     await fetch('/api/poczta', {
@@ -278,7 +300,7 @@ function TrescPoczty() {
               <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[14.5px] font-medium">{stan.adres}</p>
+              <p className="truncate text-[14.5px] font-medium">{stan.adres || 'Skrzynka podłączona'}</p>
               <p className="text-[12.5px] text-pkb-faint">
                 Asystent może wysyłać z tej skrzynki. Czytać jej nie może.
               </p>
@@ -308,13 +330,22 @@ function TrescPoczty() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.16em] text-pkb-faint">
-          Do wysłania ({czekajace.length})
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-[12px] font-semibold uppercase tracking-[0.16em] text-pkb-faint">
+            Do wysłania ({czekajace.length})
+          </h2>
+          <button
+            onClick={() => void nowyMail()}
+            className="ml-auto flex items-center gap-1.5 rounded-lg border border-pkb-border px-3 py-1.5 text-[12.5px] text-pkb-muted transition hover:border-pkb-copper hover:text-pkb-gold"
+          >
+            <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+            Napisz sam
+          </button>
+        </div>
         {czekajace.length === 0 ? (
           <p className="mt-3 rounded-2xl border border-dashed border-pkb-border px-5 py-6 text-[13.5px] leading-relaxed text-pkb-faint">
             Nic nie czeka. Powiedz asystentowi w rozmowie: „napisz maila do tej firmy",
-            a wersja robocza pojawi się tutaj.
+            a wersja robocza pojawi się tutaj. Możesz też napisać wiadomość sam.
           </p>
         ) : (
           <ul className="mt-3 flex flex-col gap-3">

@@ -17,7 +17,13 @@ const KATALOG = process.env.DANE_DIR ?? '/dane/aplikacja';
 const PLIK_TOKENOW = path.join(KATALOG, 'poczta.json');
 const KATALOG_DRAFTOW = path.join(KATALOG, 'drafty');
 
-export const ZAKRES = 'https://www.googleapis.com/auth/gmail.send';
+/**
+ * `gmail.send` daje prawo wysylki i NIC wiecej.
+ * `openid email` to zakresy niewrazliwe, potrzebne wylacznie po to, zeby pokazac
+ * prezesowi, KTORA skrzynke wlasnie podlaczyl. Bez nich Gmail odmawia podania adresu
+ * (odczyt profilu wymaga uprawnien do czytania poczty, ktorych celowo nie chcemy).
+ */
+export const ZAKRES = 'https://www.googleapis.com/auth/gmail.send openid email';
 
 const ID = process.env.GOOGLE_CLIENT_ID ?? '';
 const SEKRET = process.env.GOOGLE_CLIENT_SECRET ?? '';
@@ -27,7 +33,7 @@ export const pocztaSkonfigurowana = () => Boolean(ID && SEKRET && PRZEKIEROWANIE
 
 type Polaczenie = {
   refreshToken: string;
-  adres: string;
+  adres: string | null;
   podlaczono: string;
 };
 
@@ -98,9 +104,26 @@ export async function odbierzKod(kod: string) {
     );
   }
 
-  const adres = await pobierzAdres(dane.access_token);
+  const adres = adresZTokenu(dane.id_token) ?? (await pobierzAdres(dane.access_token));
   await zapiszPolaczenie({ refreshToken: dane.refresh_token, adres, podlaczono: new Date().toISOString() });
   return adres;
+}
+
+/**
+ * Adres wyjety z `id_token`, ktory Google dokłada przy zakresie `openid email`.
+ * Podpisu nie sprawdzamy i nie musimy: token przyszedł prosto z serwera Google
+ * po HTTPS, w odpowiedzi na nasze żądanie z sekretem klienta.
+ */
+function adresZTokenu(idToken?: string): string | null {
+  if (!idToken) return null;
+  try {
+    const srodek = idToken.split('.')[1];
+    if (!srodek) return null;
+    const dane = JSON.parse(Buffer.from(srodek.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    return typeof dane.email === 'string' ? dane.email : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Swiezy token dostepowy. Google wydaje go na godzine, wiec bierzemy nowy przy kazdej wysylce. */
@@ -127,13 +150,21 @@ async function swiezyToken(): Promise<string> {
   return dane.access_token;
 }
 
-/** Adres skrzynki, ktora wlasnie podlaczono. Bez czytania poczty: to tylko profil konta. */
-async function pobierzAdres(accessToken: string) {
-  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!res.ok) return 'nieznany adres';
-  return (await res.json()).emailAddress ?? 'nieznany adres';
+/**
+ * Zapas, gdyby zabrakło `id_token`. Pytamy o sam profil konta Google, nie o poczte.
+ * Gdy sie nie uda, zwracamy null: aplikacja napisze wtedy po prostu "skrzynka podłączona",
+ * zamiast straszyc prezesa napisem "nieznany adres".
+ */
+async function pobierzAdres(accessToken: string): Promise<string | null> {
+  try {
+    const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return null;
+    return (await res.json()).email ?? null;
+  } catch {
+    return null;
+  }
 }
 
 const base64url = (b: Buffer) => b.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -184,8 +215,10 @@ export async function listaDraftow(): Promise<Draft[]> {
         }
       }),
     );
+    // Nie odsiewamy po polu "do": wiadomosc pisana recznie zaczyna sie pusta,
+    // a agent zostawia puste pole, gdy nie zna adresu.
     return wczytane
-      .filter((d): d is Draft => Boolean(d?.do))
+      .filter((d): d is Draft => d !== null && typeof d === 'object')
       .sort((a, b) => (b.utworzony ?? '').localeCompare(a.utworzony ?? ''));
   } catch {
     return [];

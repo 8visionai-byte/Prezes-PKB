@@ -21,7 +21,9 @@ export async function GET() {
     status: 302,
     headers: {
       Location: adresZgody(stan),
-      'Set-Cookie': `pkb-poczta-stan=${stan}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`,
+      // 30 minut: prezes musi zdazyc przeczytac ostrzezenie Google i ekran zgody.
+      // Przy 10 minutach latwo bylo wrocic za pozno i zobaczyc "sesja wygasla".
+      'Set-Cookie': `pkb-poczta-stan=${stan}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=1800`,
     },
   });
 }

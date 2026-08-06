@@ -8,6 +8,7 @@ import { TytulPowitalny } from '@/components/TytulPowitalny';
 import { Pandy } from '@/components/Pandy';
 import { Powiadomienia } from '@/components/Powiadomienia';
 import { KartaPliku } from '@/components/KartaPliku';
+import { Dyktafon } from '@/components/Dyktafon';
 import { ZachetaPWA } from '@/components/ZachetaPWA';
 
 type Wiadomosc = { rola: 'user' | 'assistant'; tresc: string; pliki?: string[] };
@@ -282,6 +283,14 @@ function Czat() {
             placeholder="Napisz wiadomość albo wklej NIP..."
             aria-label="Treść wiadomości"
             className="max-h-42 flex-1 resize-none bg-transparent px-1 py-2 text-[15px] outline-none placeholder:text-pkb-faint"
+          />
+          <Dyktafon
+            naTekst={(rozpoznane) => {
+              // Dopisujemy do tego, co juz jest w polu. Prezes czyta i poprawia,
+              // nic nie leci do asystenta bez jego klikniecia.
+              setTekst((t) => (t.trim() ? `${t.trim()} ${rozpoznane}` : rozpoznane));
+              poleRef.current?.focus();
+            }}
           />
           <button
             onClick={() => void wyslij()}

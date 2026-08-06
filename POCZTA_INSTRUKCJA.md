@@ -111,6 +111,11 @@ nawet ekranu zgody. Docelowo trafi tu adres Radka.
 5. Sprawdź, że na liście jest DOKŁADNIE jeden zakres Gmaila. Jeśli wpadło coś więcej
    (np. `gmail.readonly`), usuń to. Mniej uprawnień = łatwiejsza zgoda i mniejsze ryzyko.
 
+Aplikacja prosi jeszcze o dwa zakresy niewrażliwe: `openid` i `email`. Nie trzeba ich
+tu dodawać, Google daje je zawsze. Służą wyłącznie temu, żeby pokazać prezesowi,
+KTÓRĄ skrzynkę właśnie podłączył. Bez nich Gmail odmawia podania adresu, bo odczyt
+profilu poczty wymagałby prawa do czytania wiadomości, którego celowo nie chcemy.
+
 ## Krok 6: utwórz klienta OAuth
 
 1. Wejdź na https://console.cloud.google.com/auth/clients

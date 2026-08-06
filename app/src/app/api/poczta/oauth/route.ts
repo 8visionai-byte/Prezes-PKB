@@ -23,8 +23,15 @@ export async function GET(req: NextRequest) {
 
   const stanZAdresu = parametry.get('state');
   const stanZCiasteczka = req.cookies.get('pkb-poczta-stan')?.value;
-  if (!stanZAdresu || stanZAdresu !== stanZCiasteczka) {
-    return wroc(`blad=${encodeURIComponent('Sesja podłączania wygasła. Spróbuj jeszcze raz.')}`);
+  if (!stanZCiasteczka) {
+    return wroc(
+      `blad=${encodeURIComponent('Podłączanie trwało za długo albo otwarłeś je w drugiej karcie. Kliknij Podłącz jeszcze raz i przejdź ekrany Google bez przerwy.')}`,
+    );
+  }
+  if (stanZAdresu !== stanZCiasteczka) {
+    return wroc(
+      `blad=${encodeURIComponent('To okno pochodzi z wcześniejszej próby podłączania. Kliknij Podłącz jeszcze raz.')}`,
+    );
   }
 
   const kod = parametry.get('code');
@@ -32,7 +39,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const adres = await odbierzKod(kod);
-    return wroc(`podlaczono=${encodeURIComponent(adres)}`);
+    return wroc(`podlaczono=${encodeURIComponent(adres ?? '')}`);
   } catch (e) {
     return wroc(`blad=${encodeURIComponent(e instanceof Error ? e.message : String(e))}`);
   }

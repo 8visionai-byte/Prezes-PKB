@@ -16,6 +16,20 @@ export async function GET() {
   });
 }
 
+/** Pusta wiadomosc, ktora prezes pisze sam, bez udzialu asystenta. */
+export async function POST() {
+  const id = `wlasny-${new Date().toISOString().slice(0, 10)}-${Math.random().toString(36).slice(2, 8)}`;
+  await zapiszDraft({
+    id,
+    do: '',
+    temat: '',
+    tresc: '',
+    kontekst: 'Wiadomość napisana przez Ciebie.',
+    utworzony: new Date().toISOString(),
+  });
+  return Response.json({ id });
+}
+
 /** Zapis poprawek prezesa w wersji roboczej. Nie wysyla niczego. */
 export async function PUT(req: NextRequest) {
   const { id, do: adresat, temat, tresc } = await req.json();
