@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Proza } from '@/components/Proza';
 import { PodgladPliku } from '@/components/PodgladPliku';
 import { TytulPowitalny } from '@/components/TytulPowitalny';
-import { Pandy, PrzelacznikPand } from '@/components/Pandy';
+import { Pandy } from '@/components/Pandy';
 import { Powiadomienia } from '@/components/Powiadomienia';
 import { KartaPliku } from '@/components/KartaPliku';
 import { ZachetaPWA } from '@/components/ZachetaPWA';
@@ -156,12 +156,16 @@ function Czat() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 lg:px-8">
-      <header className="flex items-start justify-between gap-3 py-5 lg:py-7">
-        <div className="flex min-w-0 items-center gap-3">
-          <TytulPowitalny />
+      {/* Napis, pasek z pandami i dzwonek. Na telefonie pandy schodza pod tytul,
+          na duzym ekranie ida obok niego i wypelniaja wolne miejsce. */}
+      <header className="flex flex-wrap items-center gap-x-5 gap-y-1 py-4 lg:py-6">
+        <TytulPowitalny />
+        <div className="order-3 min-w-0 basis-full lg:order-2 lg:basis-0 lg:grow">
           <Pandy />
         </div>
-        <Powiadomienia />
+        <div className="order-2 ml-auto lg:order-3 lg:ml-0">
+          <Powiadomienia />
+        </div>
       </header>
 
       <ZachetaPWA />
@@ -287,9 +291,6 @@ function Czat() {
           >
             <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
           </button>
-        </div>
-        <div className="flex justify-end pt-1.5">
-          <PrzelacznikPand />
         </div>
       </div>
 

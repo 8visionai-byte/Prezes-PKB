@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { wczytajUstawienia } from '@/lib/ustawienia';
 
 const PELNY = 'Asystent prezesa';
 
@@ -14,7 +15,8 @@ export function TytulPowitalny() {
   const [podpis, setPodpis] = useState(false);
 
   useEffect(() => {
-    const ograniczony = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ograniczony =
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches || !wczytajUstawienia().animacje;
     const juzBylo = sessionStorage.getItem('pkb-tytul-pokazany') === '1';
 
     if (ograniczony || juzBylo) {

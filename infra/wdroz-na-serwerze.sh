@@ -15,10 +15,12 @@ W=/root/hermes-data/profiles/prezes-test/workspace
 # a agent nie odczyta tego, co prezes wrzucil.
 # Wlasciciel = 1001 (zapis z aplikacji), grupa = 10000 (zapis z agenta),
 # bit setgid (2xxx) sprawia, ze nowe pliki dziedzicza grupe agenta.
-mkdir -p "$W/baza-wiedzy" "$W/aplikacja"
+mkdir -p "$W/baza-wiedzy" "$W/aplikacja" "$W/aplikacja/drafty"
 chown -R 1001:10000 "$W/baza-wiedzy" "$W/aplikacja"
-chmod 2775 "$W/baza-wiedzy" "$W/aplikacja"
+chmod 2775 "$W/baza-wiedzy" "$W/aplikacja" "$W/aplikacja/drafty"
 chmod -R g+rw "$W/baza-wiedzy" "$W/aplikacja" 2>/dev/null || true
+# Token do skrzynki to sekret: tylko proces aplikacji ma go czytac.
+[ -f "$W/aplikacja/poczta.json" ] && chmod 600 "$W/aplikacja/poczta.json"
 
 # Umiejetnosci agenta aplikacja tylko czyta (pokazuje je w panelu bocznym).
 chmod -R o+rX /root/hermes-data/profiles/prezes-test/skills 2>/dev/null || true

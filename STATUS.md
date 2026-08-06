@@ -235,9 +235,60 @@ Biznesu... Pamiętam też notatki ze spotkań, żeby łatwiej łączyć właści
 w Strzegomiu, szuka wykonawcy elewacji". Na pytanie "jutro mam spotkanie z firmą od elewacji,
 czy mam komu ją polecić" agent sam znalazł tę notatkę i skojarzył kontakt.
 
+### POCZTA, ANIMACJA, USTAWIENIA (2026-08-06, druga tura)
+
+**Naprawiony błąd, który zgłosił Paweł: znikające logo.** Przyczyna znaleziona pomiarem
+w przeglądarce, nie zgadywaniem: `next/image` przy szerokości żądania 384 px i wyżej
+oddawał PNG z kodem 200, ale Chrome go NIE dekodował (`naturalWidth = 0`). Logo ma 13 KB,
+więc optymalizator nic nie oszczędzał. `LogoPKB` używa teraz zwykłego `<img>`.
+
+**Animacja przebudowana wg wskazówek Pawła** (`app/src/components/Pandy.tsx`):
+- pasek na stałe u góry, na dużym ekranie obok tytułu, na telefonie pod nim, zawsze w ruchu
+- pandy większe (40x52 px zamiast 23x30), canvas rozciąga się na dostępną szerokość
+- nad głowami wędrują napisy **SFAI** i **PKB** (własny pikselowy krój 3x5, siedem glifów)
+- po przybiciu piątki uścisk unosi się do góry, a nad pandami **ulatują ikonki 🤝**
+- ikonki rysowane PRZED napisami, żeby przelatywały za nimi i nic nie zasłaniały
+- stoi, gdy karta jest w tle (bateria) i gdy system prosi o ograniczenie ruchu
+
+**Nowy panel Ustawienia** (`/ustawienia`): przełączniki „Pandy na górze" i „Ruch
+w interfejsie", stan powiadomień, informacja o aplikacji. Przełącznik pand zniknął
+z okolic pola czatu, gdzie wisiał bez ładu.
+
+**Poczta zbudowana w całości** (poza krokami, które musi wykonać Paweł):
+
+| Element | Plik |
+|---|---|
+| Połączenie z Gmailem, odświeżanie tokenu, wysyłka | `app/src/lib/poczta.ts` |
+| Start zgody Google (ochrona CSRF przez `state`) | `app/src/app/api/poczta/polacz/route.ts` |
+| Powrót z Google, wymiana kodu na token | `app/src/app/api/poczta/oauth/route.ts` |
+| Lista, edycja i usuwanie wersji roboczych | `app/src/app/api/poczta/route.ts` |
+| JEDYNY punkt wysyłki, tylko po kliknięciu prezesa | `app/src/app/api/poczta/wyslij/route.ts` |
+| Ekran prezesa | `app/src/app/poczta/page.tsx` |
+| Umiejętność agenta | `infra/skill-poczta/SKILL.md` |
+| Instrukcja dla Pawła | `POCZTA_INSTRUKCJA.md` |
+
+Decyzja o uprawnieniach oparta na dokumentacji Google, nie na pamięci:
+- `gmail.send` jest zakresem **wrażliwym**, nie zastrzeżonym, i pozwala WYŁĄCZNIE wysyłać.
+  Asystent nie może przeczytać ani jednej wiadomości ze skrzynki prezesa.
+- W trybie „Testing" token odświeżający Google **wygasa po 7 dniach**. Na stałe:
+  albo typ „Internal" (jeśli jest Google Workspace na własnej domenie), albo weryfikacja Google.
+
+DOWODY z żywego serwera:
+- agent użył skilla `poczta` i zapisał `draft-2026-08-06-jan-kowalski-podziekowanie.json`,
+  a w rozmowie napisał, że wersja robocza CZEKA (nie twierdził, że wysłał)
+- draft pokazuje się w zakładce Poczta jako karta z polami Do / Temat / Treść
+- poprawka prezesa w temacie zapisała się na dysku, `kontekst` i data powstania przetrwały
+- kliknięcie „Wyślij" -> „Tak, wyślij" zwraca czytelne „Skrzynka nie jest podłączona."
+
+**Rozwiązana pułapka uprawnień:** wersję roboczą tworzy agent (uid 10000), a poprawki
+zapisuje aplikacja (uid 1001). Nadpisanie cudzego pliku kończyło się błędem uprawnień.
+Zapis idzie teraz przez plik tymczasowy i podmianę nazwy, co wymaga prawa tylko do katalogu.
+
 ### DO ZROBIENIA
+- **Kroki Pawła do poczty**: załóż testową skrzynkę Gmail, utwórz aplikację w Google Cloud,
+  wpisz `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `POCZTA_REDIRECT_URL` w `/root/pkb-stack/.env`.
+  Wszystko krok po kroku w `POCZTA_INSTRUKCJA.md`.
 - **Logowanie prawdziwymi kontami** - największa dziura. Teraz jest tylko basic auth na Caddy.
-- Wysyłka maili: decyzja Pawła - osobna skrzynka asystenta (ok. 1 h) czy pełne OAuth Google (dzień + weryfikacja).
 - Logo: podmienić na oficjalny plik od klienta (obecne to odwzorowanie ze zrzutu).
 - Ocena briefu i rysunków przez Pawła -> ewentualne poprawki skilli.
 - Wtyczka zatwierdzania wysyłki maili + dedykowane konto pocztowe (od Pawła/Radka).
