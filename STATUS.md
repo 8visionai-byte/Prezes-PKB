@@ -182,13 +182,51 @@ Wszystkie zwracają HTTP 200, API umiejętności zwraca prawdziwą listę skilli
 Ustalone: nameservery simplefast.ai to Hostinger (dns-parking.com), domena główna na 216.198.79.1
 (Horizons), `prezes.simplefast.ai` nie istnieje. Dodanie subdomeny NIE ruszy głównej strony.
 
+### APLIKACJA NA ŻYWO POD HTTPS + RYSOWANIE (2026-08-05 / 2026-08-06)
+
+Adres: **https://prezes.simplefast.ai** (rekord A dodany bezpiecznie: 12 istniejących rekordów
+zbackupowanych przed zmianą, `overwrite: false`, `www` na Vercel i poczta nietknięte).
+Certyfikat Let's Encrypt wystawiony przez Caddy automatycznie.
+
+**Tymczasowa bramka basic auth** (login `pkb`, hasło w `/root/pkb-app-haslo.txt` na serwerze,
+chmod 600, nigdy nie przechodziło przez czat). Bez niej każdy, kto zna adres, rozmawiałby
+z agentem za kredyty Pawła. Do zdjęcia, gdy powstanie prawdziwe logowanie.
+
+Co doszło w aplikacji i zostało sprawdzone na żywo:
+
+| Funkcja | Stan | Dowód |
+|---|---|---|
+| Praca w tle + powiadomienie push | DZIAŁA | zadanie `z-1786006598215` skończyło się po 45 s przy zamkniętej karcie |
+| Rysunek jako kafelek w czacie (jak w ChatGPT) | DZIAŁA | `button "Otwórz ... na pełnym ekranie"` + Powiększ + Pobierz w drzewie dostępności |
+| Podgląd HTML w ramce | DZIAŁA | iframe 612x224 px, żądanie `/api/pliki/podglad` -> 200 |
+| Skill `wizualizacja` | DZIAŁA | agent sam zapisał `schemat-wprowadzenia-czlonka-pkb-2026-08-06.html` w bazie wiedzy |
+| Panel boczny: Rozmowa / Rozwój asystenta / Poczta | DZIAŁA | odczyt strony, linki `/`, `/umiejetnosci`, `/poczta` |
+| Zakładki Rozmowy / Dokumenty / Skille | DZIAŁA | lista skilli agenta widoczna w panelu |
+| Pandy przy tytule (ukłon, uścisk w górę) | DZIAŁA | canvas 168x52 wewnątrz `<header>`, przełącznik "pandy wł." |
+| Ty po prawej, asystent po lewej | DZIAŁA | `align-items: flex-end` na wiadomości użytkownika |
+| Ikona + instalacja jako aplikacja (PWA) | DZIAŁA | manifest 200, ikony 192/512/180/96 wygenerowane z logo PKB |
+| Telefon 375 px | DZIAŁA | zero przewijania w bok, pole wpisu widoczne |
+
+Rozwiązane pułapki tej tury:
+- **`X-Frame-Options: DENY` w Caddy blokowało własny podgląd** ("serwer odrzucił połączenie").
+  Zmienione na SAMEORIGIN + `frame-ancestors 'self'` w CSP podglądu.
+- **Aplikacja nie mogła pisać do bazy wiedzy** (`Permission denied`): kontener aplikacji to uid 1001,
+  agent to uid 10000. Rozwiązane: właściciel 1001, grupa 10000, `chmod 2775` (setgid).
+  Utrwalone w `infra/wdroz-na-serwerze.sh`, żeby nie wróciło po przebudowie.
+- **Pierwsza klatka była czarna** (`BAILOUT_TO_CLIENT_SIDE_RENDERING` przez `useSearchParams`).
+  Dodane szkielety w `Suspense`, teraz logo i pole wpisu są od razu w HTML.
+- **Rysunek znikał po ponownym otwarciu rozmowy**: `nowePliki` nie trafiały do historii. Naprawione.
+- **Agent podawał prezesowi ścieżkę systemową** `/opt/data/profiles/...`. Poprawione w skillu
+  plus filtr po stronie serwera jako zabezpieczenie.
+
+Ikony PWA generuje `app/scripts/ikony.mjs` (czysty Node, własny koder PNG, zero paczek npm)
+z pliku `app/public/logo-pkb.png`.
+
 ### DO ZROBIENIA
-- **DNS: rekord A `prezes` -> 187.124.30.210** (Paweł w hPanel albo token API Hostingera dla mnie).
-  Potem: `docker compose --profile publiczny up -d caddy` i HTTPS działa sam.
-- Logowanie (3 konta testowe) - teraz aplikacja jest bez auth, dostępna tylko lokalnie.
-- Panel bazy wiedzy (upload plików) + panel rozwoju asystenta (GET /v1/skills).
-- Subdomena prezes.simplefast.ai + Caddy z HTTPS -> dopiero wtedy Paweł testuje z telefonu.
-- Ocena briefu przez Pawła -> ewentualne poprawki skilla.
+- **Logowanie prawdziwymi kontami** - największa dziura. Teraz jest tylko basic auth na Caddy.
+- Wysyłka maili: decyzja Pawła - osobna skrzynka asystenta (ok. 1 h) czy pełne OAuth Google (dzień + weryfikacja).
+- Logo: podmienić na oficjalny plik od klienta (obecne to odwzorowanie ze zrzutu).
+- Ocena briefu i rysunków przez Pawła -> ewentualne poprawki skilli.
 - Wtyczka zatwierdzania wysyłki maili + dedykowane konto pocztowe (od Pawła/Radka).
 - Repo GitHub pod projekt (backup stanu agenta + Profile Distribution do przekazania prezesowi).
 - Później: aplikacja PKB (VS Code + GSD) - gdy brief zaakceptowany.

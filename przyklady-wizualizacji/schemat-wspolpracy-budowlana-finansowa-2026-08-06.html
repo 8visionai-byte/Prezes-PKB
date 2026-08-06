@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wspolpraca: firma budowlana i finansowa</title>
+<style>
+  :root { --bg:#0c0908; --card:#1a1411; --border:#33261e; --gold:#e8b87a; --copper:#b87d3f; --text:#f5f0e8; --muted:#8a7f70; --good:#7fae7a; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; display:grid; place-items:center; padding:38px 24px; }
+  main { width:min(1160px,100%); }
+  header { border-bottom:1px solid var(--border); padding-bottom:22px; margin-bottom:30px; display:flex; align-items:end; justify-content:space-between; gap:18px; }
+  h1 { margin:0; font-size:clamp(27px,4vw,44px); letter-spacing:-.035em; line-height:1.08; }
+  .eyebrow,.date,footer { color:var(--muted); font-size:13px; letter-spacing:.08em; text-transform:uppercase; }
+  .eyebrow { color:var(--gold); margin:0 0 8px; font-weight:700; }
+  .date { white-space:nowrap; }
+  .diagram { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:28px; overflow:hidden; }
+  svg { width:100%; height:auto; display:block; }
+  .step { fill:#211914; stroke:var(--border); stroke-width:2; }
+  .step-number { fill:var(--gold); }
+  .number { fill:#0c0908; font-weight:800; font-size:19px; text-anchor:middle; dominant-baseline:middle; }
+  .title { fill:var(--text); font-weight:750; font-size:21px; }
+  .copy { fill:var(--muted); font-size:15px; }
+  .arrow { stroke:var(--copper); stroke-width:3; fill:none; }
+  .label-bg { fill:#2a1c14; }
+  .label { fill:var(--gold); font-size:13px; font-weight:700; text-anchor:middle; }
+  .legend { margin:22px 2px 0; color:var(--muted); font-size:15px; line-height:1.5; }
+  .legend strong { color:var(--good); font-weight:700; }
+  footer { padding-top:24px; margin-top:28px; border-top:1px solid var(--border); }
+  @media (max-width:760px) { body { padding:22px 14px; } header { display:block; } .date { margin-top:14px; } .diagram { padding:15px; } }
+  @media print { body { background:white; color:black; padding:0; } main { width:100%; } .diagram { background:white; border-color:#777; } .step { fill:#f7f4ef; stroke:#777; } .title { fill:black; } .copy,.legend,footer,.date { color:#444; } .arrow { stroke:#8a5a2b; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <p class="eyebrow">Schemat wspolpracy klubowej</p>
+      <h1>Budownictwo + finanse: od inwestycji do realizacji</h1>
+    </div>
+    <div class="date">6 sierpnia 2026</div>
+  </header>
+  <section class="diagram" aria-label="Trzy kroki wspolpracy firmy budowlanej z firma finansowa">
+    <svg viewBox="0 0 1100 390" role="img" aria-labelledby="svg-title svg-desc">
+      <title id="svg-title">Trzy kroki wspolpracy</title>
+      <desc id="svg-desc">Firma budowlana przedstawia projekt, firma finansowa tworzy finansowanie, a nastepnie obie firmy realizuja inwestycje.</desc>
+      <defs><marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b87d3f"/></marker></defs>
+      <path class="arrow" d="M332 194 H416" marker-end="url(#arrowhead)"/>
+      <rect class="label-bg" x="334" y="151" width="80" height="25" rx="12"/><text class="label" x="374" y="168">potrzeba</text>
+      <path class="arrow" d="M684 194 H768" marker-end="url(#arrowhead)"/>
+      <rect class="label-bg" x="682" y="151" width="88" height="25" rx="12"/><text class="label" x="726" y="168">decyzja</text>
+      <g transform="translate(18 80)">
+        <rect class="step" width="314" height="230" rx="18"/>
+        <circle class="step-number" cx="42" cy="42" r="22"/><text class="number" x="42" y="43">1</text>
+        <text class="title" x="78" y="41">Projekt i potrzeba</text>
+        <text class="copy" x="32" y="102">Firma budowlana przedstawia</text>
+        <text class="copy" x="32" y="128">inwestycje, harmonogram</text>
+        <text class="copy" x="32" y="154">i zapotrzebowanie na kapital.</text>
+        <rect x="32" y="182" width="177" height="27" rx="13" fill="#263224"/><text x="46" y="201" fill="#7fae7a" font-size="13" font-weight="700">firma budowlana</text>
+      </g>
+      <g transform="translate(434 80)">
+        <rect class="step" width="314" height="230" rx="18"/>
+        <circle class="step-number" cx="42" cy="42" r="22"/><text class="number" x="42" y="43">2</text>
+        <text class="title" x="78" y="41">Finansowanie</text>
+        <text class="copy" x="32" y="102">Firma finansowa analizuje</text>
+        <text class="copy" x="32" y="128">projekt i dobiera model:</text>
+        <text class="copy" x="32" y="154">kredyt, leasing lub faktoring.</text>
+        <rect x="32" y="182" width="164" height="27" rx="13" fill="#30261a"/><text x="46" y="201" fill="#e8b87a" font-size="13" font-weight="700">firma finansowa</text>
+      </g>
+      <g transform="translate(850 80)">
+        <rect class="step" width="232" height="230" rx="18"/>
+        <circle class="step-number" cx="42" cy="42" r="22"/><text class="number" x="42" y="43">3</text>
+        <text class="title" x="78" y="41">Realizacja</text>
+        <text class="copy" x="32" y="102">Budowa rusza,</text>
+        <text class="copy" x="32" y="128">a finansowanie</text>
+        <text class="copy" x="32" y="154">wspiera rozliczenia.</text>
+        <rect x="32" y="182" width="145" height="27" rx="13" fill="#263224"/><text x="46" y="201" fill="#7fae7a" font-size="13" font-weight="700">wspolny efekt</text>
+      </g>
+    </svg>
+    <p class="legend"><strong>Cel:</strong> bezpiecznie sfinansowac projekt i sprawnie przeprowadzic jego realizacje.</p>
+  </section>
+  <footer>Partnerskie Kluby Biznesu</footer>
+</main>
+</body>
+</html>

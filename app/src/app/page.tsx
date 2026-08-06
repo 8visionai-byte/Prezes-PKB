@@ -5,16 +5,12 @@ import { useSearchParams } from 'next/navigation';
 import { Proza } from '@/components/Proza';
 import { PodgladPliku } from '@/components/PodgladPliku';
 import { TytulPowitalny } from '@/components/TytulPowitalny';
-import { PandyPrzeciagnij } from '@/components/Pandy';
+import { Pandy, PrzelacznikPand } from '@/components/Pandy';
 import { Powiadomienia } from '@/components/Powiadomienia';
+import { KartaPliku } from '@/components/KartaPliku';
+import { ZachetaPWA } from '@/components/ZachetaPWA';
 
-type Wiadomosc = { rola: 'user' | 'assistant'; tresc: string };
-
-const PODPOWIEDZI = [
-  'Przygotuj mnie do spotkania z firmą o NIP 8961660233',
-  'Sprawdź firmę AVISTA OIL ze Strzegomia',
-  'Narysuj schemat, jak połączyć firmę budowlaną z firmą finansową w klubie',
-];
+type Wiadomosc = { rola: 'user' | 'assistant'; tresc: string; pliki?: string[] };
 
 const SCIEZKA_BAZY = '/opt/data/profiles/prezes-test/workspace/baza-wiedzy';
 
@@ -58,12 +54,10 @@ function Czat() {
     dolRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [wiadomosci, pracuje]);
 
-  // Panel boczny prosi o podglad pliku albo o dolaczenie go do rozmowy.
   useEffect(() => {
     const naPodglad = (e: Event) => setPodglad((e as CustomEvent<string>).detail);
     const naDolacz = (e: Event) => {
-      const n = (e as CustomEvent<string>).detail;
-      setZalaczniki((z) => [...new Set([...z, n])]);
+      setZalaczniki((z) => [...new Set([...z, (e as CustomEvent<string>).detail])]);
       poleRef.current?.focus();
     };
     window.addEventListener('pkb-podglad', naPodglad);
@@ -80,15 +74,14 @@ function Czat() {
 
   const sledzZadanie = useCallback((idZadania: string, widoczne: Wiadomosc[]) => {
     if (odpytywanie.current) window.clearInterval(odpytywanie.current);
-
     odpytywanie.current = window.setInterval(async () => {
       try {
         const r = await fetch(`/api/zadania/${idZadania}`);
         if (!r.ok) return;
         const z = await r.json();
-
-        if (z.tresc) setWiadomosci([...widoczne, { rola: 'assistant', tresc: z.tresc }]);
-
+        if (z.tresc) {
+          setWiadomosci([...widoczne, { rola: 'assistant', tresc: z.tresc, pliki: z.nowePliki ?? [] }]);
+        }
         if (z.status !== 'pracuje') {
           if (odpytywanie.current) window.clearInterval(odpytywanie.current);
           odpytywanie.current = null;
@@ -96,7 +89,7 @@ function Czat() {
           if (z.status === 'blad') setBlad(z.blad ?? 'Coś poszło nie tak.');
           window.dispatchEvent(new CustomEvent('pkb-odswiez'));
         }
-      } catch { /* chwilowy brak sieci - probujemy dalej */ }
+      } catch { /* chwilowy brak sieci */ }
     }, 900);
   }, []);
 
@@ -119,8 +112,8 @@ function Czat() {
     }
   }
 
-  async function wyslij(trescWejscia?: string) {
-    const pytanie = (trescWejscia ?? tekst).trim();
+  async function wyslij() {
+    const pytanie = tekst.trim();
     if ((!pytanie && zalaczniki.length === 0) || pracuje) return;
 
     setBlad(null);
@@ -134,7 +127,7 @@ function Czat() {
 
     const widoczne: Wiadomosc[] = [
       ...wiadomosci,
-      { rola: 'user', tresc: zalaczniki.length ? `${pytanie}\n\nZałączniki: ${zalaczniki.join(', ')}` : pytanie },
+      { rola: 'user', tresc: pytanie, pliki: zalaczniki.length ? [...zalaczniki] : undefined },
     ];
     const kontekst: Wiadomosc[] = [...wiadomosci, { rola: 'user', tresc: doModelu }];
 
@@ -163,53 +156,46 @@ function Czat() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 lg:px-8">
-      <PandyPrzeciagnij wlaczone />
-
-      <header className="flex items-start justify-between gap-4 py-5 lg:py-7">
-        <TytulPowitalny />
+      <header className="flex items-start justify-between gap-3 py-5 lg:py-7">
+        <div className="flex min-w-0 items-center gap-3">
+          <TytulPowitalny />
+          <Pandy />
+        </div>
         <Powiadomienia />
       </header>
 
+      <ZachetaPWA />
+
       <main className="flex-1 pb-6">
         {pusto ? (
-          <div className="pkb-wejscie flex flex-col gap-6 pt-2">
-            <p className="max-w-lg text-[15.5px] leading-relaxed text-pkb-muted">
-              Podaj NIP albo nazwę firmy, a przygotuję brief przed spotkaniem: dane z rejestrów,
-              czerwone flagi, co słychać w firmie i z kim z klubu ją skojarzyć.
-            </p>
-            <ul className="flex flex-col gap-1.5">
-              {PODPOWIEDZI.map((p) => (
-                <li key={p}>
-                  <button
-                    onClick={() => void wyslij(p)}
-                    className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[14px] text-pkb-muted transition hover:bg-pkb-surface/60 hover:text-pkb-text"
-                  >
-                    <span className="text-pkb-copper transition group-hover:text-pkb-gold">→</span>
-                    {p}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <p className="pkb-wejscie max-w-lg pt-4 text-[15.5px] leading-relaxed text-pkb-muted">
+            Podaj NIP albo nazwę firmy, a przygotuję brief przed spotkaniem: dane z rejestrów,
+            czerwone flagi, co słychać w firmie i z kim z klubu ją skojarzyć.
+          </p>
         ) : (
-          <ul className="flex flex-col gap-6">
+          <ul className="flex flex-col gap-5">
             {wiadomosci.map((m, i) => {
               const ostatnia = i === wiadomosci.length - 1;
+
               if (m.rola === 'user') {
                 return (
-                  <li key={i} className="flex justify-end">
-                    <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md border border-pkb-border-soft bg-pkb-surface-2 px-4 py-2.5 text-[15px] leading-relaxed">
+                  <li key={i} className="flex flex-col items-end gap-1.5">
+                    <p className="max-w-[82%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-pkb-surface-2 px-4 py-2.5 text-[15px] leading-relaxed">
                       {m.tresc}
                     </p>
+                    {m.pliki?.length ? (
+                      <span className="text-[11.5px] text-pkb-faint">załączniki: {m.pliki.join(', ')}</span>
+                    ) : null}
                   </li>
                 );
               }
+
               return (
                 <li key={i} className="flex gap-3">
-                  <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-pkb-copper/40 bg-pkb-copper/10 text-[10px] font-semibold tracking-wider text-pkb-gold">
+                  <span className="mt-1 grid size-7 shrink-0 place-items-center rounded-full border border-pkb-copper/40 bg-pkb-copper/10 text-[10px] font-semibold tracking-wider text-pkb-gold">
                     PKB
                   </span>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 max-w-[92%] flex-1 rounded-2xl rounded-tl-md border border-pkb-border-soft bg-pkb-surface/45 px-4 py-3">
                     {m.tresc ? <Proza tresc={m.tresc} /> : null}
                     {ostatnia && pracuje ? (
                       m.tresc ? (
@@ -218,6 +204,9 @@ function Czat() {
                         <span className="pkb-puls text-[14px] text-pkb-muted">Sprawdzam w rejestrach i w sieci...</span>
                       )
                     ) : null}
+                    {m.pliki?.map((n) => (
+                      <KartaPliku key={n} nazwa={n} otworz={setPodglad} />
+                    ))}
                   </div>
                 </li>
               );
@@ -239,7 +228,7 @@ function Czat() {
         <div ref={dolRef} />
       </main>
 
-      <div className="sticky bottom-0 -mx-4 bg-gradient-to-t from-pkb-bg via-pkb-bg to-transparent px-4 pb-5 pt-3 lg:-mx-8 lg:px-8">
+      <div className="sticky bottom-0 -mx-4 bg-gradient-to-t from-pkb-bg via-pkb-bg to-transparent px-4 pb-4 pt-3 lg:-mx-8 lg:px-8">
         {zalaczniki.length > 0 ? (
           <div className="mb-2 flex flex-wrap gap-2">
             {zalaczniki.map((n) => (
@@ -256,17 +245,13 @@ function Czat() {
             ref={plikRef}
             type="file"
             className="sr-only"
-            onChange={(e) => {
-              const p = e.target.files?.[0];
-              if (p) void wgrajPlik(p);
-            }}
-            accept=".pdf,.txt,.md,.csv,.docx,.xlsx,.png,.jpg,.jpeg,.webp"
+            onChange={(e) => { const p = e.target.files?.[0]; if (p) void wgrajPlik(p); }}
+            accept=".pdf,.txt,.md,.csv,.docx,.xlsx,.png,.jpg,.jpeg,.webp,.html"
           />
           <button
             onClick={() => plikRef.current?.click()}
             disabled={wysylaPlik}
             aria-label="Dołącz dokument"
-            title="Dołącz dokument"
             className="grid size-10 shrink-0 place-items-center rounded-xl text-pkb-muted transition hover:bg-pkb-surface-2 hover:text-pkb-gold disabled:opacity-40"
           >
             {wysylaPlik ? <span className="pkb-puls text-[11px]">...</span> : (
@@ -303,6 +288,9 @@ function Czat() {
             <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
           </button>
         </div>
+        <div className="flex justify-end pt-1.5">
+          <PrzelacznikPand />
+        </div>
       </div>
 
       {podglad ? <PodgladPliku nazwa={podglad} zamknij={() => setPodglad(null)} /> : null}
@@ -310,9 +298,28 @@ function Czat() {
   );
 }
 
+/** Pierwsza klatka czatu: naglowek i pole na wiadomosc sa na miejscu od razu. */
+function SzkieletCzatu() {
+  return (
+    <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 lg:px-8" aria-busy>
+      <header className="py-5 lg:py-7">
+        <div className="h-[30px] w-56 rounded-md bg-pkb-surface/50" />
+        <div className="mt-2 h-[14px] w-40 rounded bg-pkb-surface/30" />
+      </header>
+      <main className="flex-1">
+        <div className="mt-4 h-[18px] w-full max-w-lg rounded bg-pkb-surface/30" />
+        <div className="mt-2 h-[18px] w-4/5 max-w-lg rounded bg-pkb-surface/20" />
+      </main>
+      <div className="sticky bottom-0 -mx-4 px-4 pb-4 pt-3 lg:-mx-8 lg:px-8">
+        <div className="h-[60px] rounded-2xl border border-pkb-border bg-pkb-surface/70" />
+      </div>
+    </div>
+  );
+}
+
 export default function Strona() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<SzkieletCzatu />}>
       <Czat />
     </Suspense>
   );

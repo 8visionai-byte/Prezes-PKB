@@ -8,7 +8,9 @@ prezes.simplefast.ai {
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
+		# SAMEORIGIN, nie DENY: aplikacja pokazuje wizualizacje agenta we wlasnej ramce.
+		# DENY blokowalo wlasny podglad ("serwer odrzucil polaczenie").
+		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		-Server
 	}

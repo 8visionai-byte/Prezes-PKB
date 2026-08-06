@@ -20,6 +20,8 @@ export type Zadanie = {
   blad?: string;
   zaczete: number;
   skonczone?: number;
+  /** Pliki, ktore agent stworzyl w trakcie tego zadania - pokazujemy je jako karty w czacie. */
+  nowePliki?: string[];
 };
 
 const KATALOG = process.env.DANE_DIR ?? '/dane/aplikacja';
@@ -75,11 +77,12 @@ export async function aktualizujTresc(id: string, tresc: string) {
   // Bez zapisu na dysk przy kazdym kawalku tekstu - to setki zapisow na jedna odpowiedz.
 }
 
-export async function zakonczZadanie(id: string, status: 'gotowe' | 'blad', blad?: string) {
+export async function zakonczZadanie(id: string, status: 'gotowe' | 'blad', blad?: string, nowePliki?: string[]) {
   const z = pamiec.get(id);
   if (!z) return;
   z.status = status;
   z.blad = blad;
+  z.nowePliki = nowePliki;
   z.skonczone = Date.now();
   await zapiszNaDysk();
 }

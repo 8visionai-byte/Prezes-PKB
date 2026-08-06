@@ -19,8 +19,12 @@ To jedyne miejsce, ktore aplikacja pokazuje prezesowi. Plik zapisany gdzie indzi
 Po zapisaniu sprawdz `ls` tego katalogu i upewnij sie, ze plik tam jest.
 
 Nazwa pliku: krotka, po polsku, z data, np. `schemat-powiazan-avista-2026-08-05.html`.
-Po zapisaniu NAPISZ uzytkownikowi nazwe pliku i jednym zdaniem co przedstawia.
-Plik pojawi sie w panelu bocznym w sekcji Dokumenty, gdzie mozna go otworzyc i pobrac.
+
+W ODPOWIEDZI DLA PREZESA NIE PODAWAJ SCIEZKI SYSTEMOWEJ. Pelna sciezka jest potrzebna
+Tobie do zapisu, prezesowi nie mowi nic i wyglada jak usterka. Napisz po ludzku, np.:
+"Rysunek gotowy: trzy kroki wspolpracy firmy budowlanej z finansowa." Gotowy rysunek
+sam pojawi sie w rozmowie jako kafelek z podgladem i przyciskiem pobierania,
+a takze w panelu bocznym w sekcji Dokumenty.
 
 ## Kiedy proponowac samemu
 
@@ -71,5 +75,6 @@ Slupki rysuj jako prostokaty SVG z podpisana wartoscia.
 
 ## Po zapisaniu
 
-Sprawdz, ze plik istnieje i ma sensowny rozmiar. Potem napisz krotko:
-co przedstawia i gdzie go znalezc. Bez opisywania calej zawartosci.
+Sprawdz, ze plik istnieje i ma sensowny rozmiar. Potem napisz jedno, najwyzej dwa
+zdania o tym, co rysunek przedstawia. Bez sciezki systemowej, bez opisywania calej
+zawartosci: prezes i tak zobaczy rysunek obok Twojej odpowiedzi.

@@ -60,7 +60,8 @@ export async function GET(req: NextRequest) {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'Content-Security-Policy':
-            "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'",
+            "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
+          'X-Frame-Options': 'SAMEORIGIN',
           'X-Content-Type-Options': 'nosniff',
         },
       });

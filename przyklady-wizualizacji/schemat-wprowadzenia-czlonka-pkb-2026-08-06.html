@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wprowadzenie nowego członka do PKB</title>
+<style>
+  :root{--bg:#0c0908;--card:#1a1411;--line:#33261e;--gold:#e8b87a;--copper:#b87d3f;--text:#f5f0e8;--muted:#8a7f70;--green:#7fae7a}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .page{min-height:100vh;max-width:1440px;margin:auto;padding:58px 7vw 38px;display:flex;flex-direction:column}
+  .eyebrow{color:var(--gold);font-size:13px;font-weight:750;letter-spacing:.14em;text-transform:uppercase;margin:0 0 14px}
+  h1{font-size:clamp(30px,4vw,54px);letter-spacing:-.04em;line-height:1.05;margin:0;max-width:850px}
+  .intro{color:var(--muted);font-size:18px;line-height:1.5;margin:18px 0 44px;max-width:650px}
+  .flow{display:grid;grid-template-columns:1fr 92px 1fr 92px 1fr;align-items:center;gap:0;flex:1}
+  .stage{min-height:300px;border:1px solid var(--line);background:var(--card);border-radius:18px;padding:30px;position:relative;box-shadow:0 12px 38px rgba(0,0,0,.18)}
+  .num{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#24160c;font-size:18px;font-weight:800;margin-bottom:27px}
+  .stage h2{font-size:25px;line-height:1.15;letter-spacing:-.025em;margin:0 0 12px}
+  .stage p{font-size:16px;line-height:1.55;color:var(--muted);margin:0}
+  .tag{position:absolute;left:30px;bottom:28px;color:var(--green);font-weight:700;font-size:14px}
+  .arrow{height:2px;background:var(--copper);position:relative;margin:0 17px}.arrow:after{content:"";position:absolute;right:-1px;top:50%;width:13px;height:13px;border-top:2px solid var(--copper);border-right:2px solid var(--copper);transform:translateY(-50%) rotate(45deg)}
+  footer{border-top:1px solid var(--line);padding-top:20px;margin-top:45px;display:flex;justify-content:space-between;color:var(--muted);font-size:13px}.brand{color:var(--gold);font-weight:700}
+  @media(max-width:800px){.page{padding:38px 22px 28px}.flow{grid-template-columns:1fr;gap:16px}.arrow{height:48px;width:2px;margin:0 auto}.arrow:after{right:auto;bottom:-1px;top:auto;left:50%;transform:translateX(-50%) rotate(135deg)}.stage{min-height:230px}footer{margin-top:30px}}
+  @media print{body{background:white;color:black}.page{padding:30px}.stage{background:white;border-color:#aaa;box-shadow:none}.stage p,.intro,footer{color:#444}.eyebrow,.brand{color:#875a27}.num{background:#e8b87a}.arrow{background:#875a27}.arrow:after{border-color:#875a27}}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="eyebrow">Proces członkowski</div>
+  <h1>Trzy etapy wprowadzania nowego członka do klubu PKB</h1>
+  <p class="intro">Prosty proces od pierwszego kontaktu do aktywnego uczestnictwa w społeczności Partnerskich Klubów Biznesu.</p>
+  <section class="flow" aria-label="Trzy etapy wprowadzenia">
+    <article class="stage"><div class="num">1</div><h2>Poznanie</h2><p>Rozmowa z kandydatem, rozpoznanie jego firmy, potrzeb oraz możliwych obszarów współpracy z klubem.</p><div class="tag">Kontakt i dopasowanie</div></article>
+    <div class="arrow" aria-hidden="true"></div>
+    <article class="stage"><div class="num">2</div><h2>Włączenie</h2><p>Przedstawienie zasad klubu, oferty i najbliższych możliwości. Powitanie oraz pierwsze rekomendowane kontakty.</p><div class="tag">Start relacji</div></article>
+    <div class="arrow" aria-hidden="true"></div>
+    <article class="stage"><div class="num">3</div><h2>Aktywność</h2><p>Udział w spotkaniach i inicjatywach, budowanie relacji oraz korzystanie z sieci kontaktów PKB.</p><div class="tag">Członek aktywny</div></article>
+  </section>
+  <footer><span>6 sierpnia 2026</span><span class="brand">Partnerskie Kluby Biznesu</span></footer>
+</main>
+</body>
+</html>

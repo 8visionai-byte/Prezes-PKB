@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { utworzZadanie, aktualizujTresc, zakonczZadanie, trwajace } from '@/lib/zadania';
 import { wyslijPowiadomienie } from '@/lib/push';
@@ -11,8 +11,26 @@ const HERMES_URL = process.env.HERMES_API_URL ?? 'http://127.0.0.1:8642';
 const HERMES_KEY = process.env.HERMES_API_KEY ?? '';
 const KATALOG = process.env.DANE_DIR ?? '/dane/aplikacja';
 const PLIK_ROZMOW = path.join(KATALOG, 'rozmowy.json');
+const BAZA = process.env.BAZA_WIEDZY_DIR ?? '/dane/baza-wiedzy';
 
-type Wiadomosc = { rola: 'user' | 'assistant'; tresc: string };
+/** Lista plikow w bazie wiedzy - do porownania przed i po zadaniu. */
+async function spisPlikow(): Promise<string[]> {
+  try {
+    return await readdir(BAZA);
+  } catch {
+    return [];
+  }
+}
+
+type Wiadomosc = { rola: 'user' | 'assistant'; tresc: string; pliki?: string[] };
+
+/**
+ * Agent czasem podaje pelna sciezke systemowa do zapisanego pliku.
+ * Prezesowi nic ona nie mowi, a wyglada jak usterka - zostawiamy sama nazwe pliku.
+ */
+function bezSciezekSystemowych(tekst: string) {
+  return tekst.replace(/\/opt\/data\/profiles\/[^/\s]+\/workspace\/baza-wiedzy\//g, '');
+}
 
 /** Dopisuje gotowa odpowiedz do historii rozmow, zeby nie zginela po zamknieciu aplikacji. */
 async function dopiszDoHistorii(rozmowaId: string, tytul: string, wiadomosci: Wiadomosc[]) {
@@ -43,6 +61,7 @@ async function prowadzZadanie(
   kontekst: Wiadomosc[],
   widoczne: Wiadomosc[],
 ) {
+  const plikiPrzed = new Set(await spisPlikow());
   try {
     const res = await fetch(`${HERMES_URL}/v1/chat/completions`, {
       method: 'POST',
@@ -79,16 +98,22 @@ async function prowadzZadanie(
           const kawalek = JSON.parse(dane)?.choices?.[0]?.delta?.content ?? '';
           if (kawalek) {
             odpowiedz += kawalek;
-            void aktualizujTresc(idZadania, odpowiedz);
+            void aktualizujTresc(idZadania, bezSciezekSystemowych(odpowiedz));
           }
         } catch { /* niekompletna paczka */ }
       }
     }
 
-    const finalna = odpowiedz || 'Asystent nie zwrócił odpowiedzi.';
+    const finalna = bezSciezekSystemowych(odpowiedz) || 'Asystent nie zwrócił odpowiedzi.';
     await aktualizujTresc(idZadania, finalna);
-    await zakonczZadanie(idZadania, 'gotowe');
-    await dopiszDoHistorii(rozmowaId, tytul, [...widoczne, { rola: 'assistant', tresc: finalna }]);
+    const nowePliki = (await spisPlikow()).filter((n) => !plikiPrzed.has(n));
+    await zakonczZadanie(idZadania, 'gotowe', undefined, nowePliki);
+    // Pliki ida do historii razem z odpowiedzia: po ponownym otwarciu rozmowy
+    // rysunek nadal jest widoczny jako kafelek, a nie znika.
+    await dopiszDoHistorii(rozmowaId, tytul, [
+      ...widoczne,
+      { rola: 'assistant', tresc: finalna, ...(nowePliki.length ? { pliki: nowePliki } : {}) },
+    ]);
 
     const zajawka = finalna.replace(/[#*`>_-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 110);
     await wyslijPowiadomienie('Asystent skończył', zajawka || 'Odpowiedź jest gotowa.', `/?rozmowa=${rozmowaId}`);

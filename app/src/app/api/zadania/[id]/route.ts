@@ -14,5 +14,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     status: z.status,
     tresc: z.tresc,
     blad: z.blad ?? null,
+    nowePliki: z.nowePliki ?? [],
   });
 }
