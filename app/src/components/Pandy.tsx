@@ -43,6 +43,10 @@ const KROJ: Record<string, string[]> = {
 
 const PILKA = ['.##.', '####', '####', '.##.'];
 
+/** Ile trwa jedno odbicie i jak daleko przed pandą leży piłka. */
+const CZAS_ODBICIA = 620;
+const ODLEGLOSC_PILKI = 6;
+
 const szerokoscNapisu = (napis: string) => napis.length * 4 - 1;
 
 function napisz(ctx: CanvasRenderingContext2D, napis: string, x: number, y: number, kolor: string) {
@@ -298,19 +302,34 @@ export function Pandy() {
       if (jestMiejsce) biurko(ctx, biurkoX, p, Math.floor(t / 240) % 2 === 0);
 
       // --- prawa strona: PKB i piłka ---
+      // Rytm zonglerki: dwa odbicia ta sama noga, potem przerzut na druga i znowu dwa.
+      // Odbicie nr 1 i 3 w kazdej czworce to wlasnie przerzut, wiec leci wyzszym lukiem.
+      let pilkaX = 0;
+      let pilkaY = 0;
       if (zongluje) {
-        // Piłka wędruje od stopy do stopy. Gdy jest nisko przy nodze, panda kopie;
-        // gdy przelatuje górą, panda przekręca się na drugą stronę.
-        const s = Math.sin(t / 330);
-        const wysoko = Math.abs(Math.cos(t / 330));
-        kierP = s >= 0 ? 1 : -1;
-        nogiP = Math.abs(s) > 0.68 ? 'kopie' : 'stoi';
-        bitmapa(ctx, PILKA, srodekPilkarza - 2 + s * 5.5, ZIEMIA - 4.5 - wysoko * 8, p.akcent);
-      } else if (jestMiejsce && (faza === 'wstaje' || faza === 'wita' || faza === 'uscisk' || faza === 'idzie' || faza === 'wraca')) {
-        bitmapa(ctx, PILKA, srodekPilkarza - 2, ZIEMIA - 4, p.miedz);
+        const nr = Math.floor(t / CZAS_ODBICIA);
+        const u = (t % CZAS_ODBICIA) / CZAS_ODBICIA;
+        const stronaOdbicia = (k: number) => (Math.floor(k / 2) % 2 === 0 ? 1 : -1);
+        const skad = stronaOdbicia(nr);
+        const dokad = stronaOdbicia(nr + 1);
+        const przerzut = skad !== dokad;
+
+        // Panda obraca sie w polowie lotu, czyli wtedy, gdy pilka jest najwyzej.
+        kierP = (u < 0.5 ? skad : dokad) as 1 | -1;
+        nogiP = u < 0.16 ? 'kopie' : 'stoi';
+
+        pilkaX = srodekPilkarza + (skad + (dokad - skad) * u) * ODLEGLOSC_PILKI;
+        pilkaY = ZIEMIA - 4.5 - Math.sin(u * Math.PI) * (przerzut ? 10 : 7);
       }
 
       panda(ctx, xp, GORA_PANDY, kierP, nogiP, lapaP, p);
+
+      // Piłka rysowana PO pandzie, więc zawsze jest PRZED nią, nigdy za jej plecami.
+      if (zongluje) {
+        bitmapa(ctx, PILKA, pilkaX - 2, pilkaY, p.akcent);
+      } else if (jestMiejsce && faza !== 'praca' && faza !== 'siada') {
+        bitmapa(ctx, PILKA, srodekPilkarza + ODLEGLOSC_PILKI - 2, ZIEMIA - 4, p.miedz);
+      }
 
       // złączone łapy: przy uniesieniu wędrują w górę
       if (faza === 'wita' || faza === 'uscisk') {
