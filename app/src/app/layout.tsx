@@ -6,7 +6,8 @@ export const metadata: Metadata = {
   title: 'Asystent Prezesa PKB',
   description: 'Asystent AI Partnerskich Klubów Biznesu',
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Asystent PKB' },
+  // title = napis pod ikona na iPhonie, odpowiednik short_name z manifestu.
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Asystent' },
 };
 
 export const viewport: Viewport = {

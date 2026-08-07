@@ -15,6 +15,7 @@ const APP = path.join(KATALOG, '..');
 const TLO = [20, 16, 12]; // #14100c, to samo co w manifescie
 const ZNAK = { x: 11, y: 0, w: 169, h: 85 }; // sam symbol z logo, bez napisu
 const UDZIAL = 0.62; // ile szerokosci ikony zajmuje znak (reszta to margines maskable)
+const PODPIS_KOLOR = [184, 125, 63]; // miedz #b87d3f, ten sam akcent co w aplikacji
 
 // --- dekoder PNG (RGBA8, bez przeplotu) ---
 function dekoduj(buf) {
@@ -125,7 +126,57 @@ function probka(zrodlo, sx0, sy0, sx1, sy1) {
   return [r / a, g / a, b / a, a / n];
 }
 
-function zrobIkone(logo, bok) {
+/**
+ * Krój 5x7 na podpis pod znakiem. Rysowany pikselami, bo skrypt celowo nie ma
+ * żadnych zależności: własny koder PNG i własne litery, zero paczek npm.
+ */
+const KROJ = {
+  A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
+  S: ['.####', '#....', '#....', '.###.', '....#', '....#', '####.'],
+  Y: ['#...#', '#...#', '.#.#.', '..#..', '..#..', '..#..', '..#..'],
+  T: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'],
+  E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
+  N: ['#...#', '##..#', '##..#', '#.#.#', '#..##', '#..##', '#...#'],
+};
+
+const PODPIS = 'ASYSTENT';
+const SZER_ZNAKU = 5;
+const WYS_ZNAKU = 7;
+const ODSTEP = 1;
+const SZER_PODPISU = PODPIS.length * SZER_ZNAKU + (PODPIS.length - 1) * ODSTEP;
+
+function pisz(plotno, bok, tekst, x0, y0, jednostka, kolor) {
+  let kursor = x0;
+  for (const znak of tekst) {
+    const glif = KROJ[znak];
+    if (glif) {
+      glif.forEach((wiersz, wy) => {
+        [...wiersz].forEach((p, wx) => {
+          if (p !== '#') return;
+          for (let dy = 0; dy < jednostka; dy++) {
+            for (let dx = 0; dx < jednostka; dx++) {
+              const x = kursor + wx * jednostka + dx;
+              const y = y0 + wy * jednostka + dy;
+              if (x < 0 || y < 0 || x >= bok || y >= bok) continue;
+              const i = (y * bok + x) * 4;
+              plotno[i] = kolor[0];
+              plotno[i + 1] = kolor[1];
+              plotno[i + 2] = kolor[2];
+            }
+          }
+        });
+      });
+    }
+    kursor += (SZER_ZNAKU + ODSTEP) * jednostka;
+  }
+}
+
+/**
+ * @param bok       rozmiar ikony w pikselach
+ * @param zPodpisem czy dopisać "ASYSTENT" pod znakiem. Na favikonie 96 px litery
+ *                  zlewałyby się w plamę, więc tam zostaje sam znak PKB.
+ */
+function zrobIkone(logo, bok, zPodpisem) {
   const plotno = Buffer.alloc(bok * bok * 4);
   for (let i = 0; i < bok * bok; i++) {
     plotno[i * 4] = TLO[0];
@@ -134,10 +185,16 @@ function zrobIkone(logo, bok) {
     plotno[i * 4 + 3] = 255;
   }
 
-  const szer = Math.round(bok * UDZIAL);
+  // Jednostka podpisu zawsze całkowita, inaczej litery wychodzą rozmyte.
+  const jednostka = zPodpisem ? Math.max(1, Math.floor((bok * 0.55) / SZER_PODPISU)) : 0;
+  const wysPodpisu = zPodpisem ? WYS_ZNAKU * jednostka : 0;
+
+  const szer = Math.round(bok * (zPodpisem ? 0.54 : UDZIAL));
   const wys = Math.round((szer * ZNAK.h) / ZNAK.w);
   const ox = Math.round((bok - szer) / 2);
-  const oy = Math.round((bok - wys) / 2);
+  // Znak i podpis traktujemy jak jeden blok i centrujemy razem.
+  const przerwa = zPodpisem ? Math.round(bok * 0.07) : 0;
+  const oy = Math.round((bok - (wys + przerwa + wysPodpisu)) / 2);
   const skala = ZNAK.w / szer;
 
   for (let y = 0; y < wys; y++) {
@@ -156,20 +213,28 @@ function zrobIkone(logo, bok) {
       plotno[i + 2] = Math.round(plotno[i + 2] * (1 - a) + b * a);
     }
   }
+
+  if (zPodpisem) {
+    const x0 = Math.round((bok - SZER_PODPISU * jednostka) / 2);
+    pisz(plotno, bok, PODPIS, x0, oy + wys + przerwa, jednostka, PODPIS_KOLOR);
+  }
+
   return koduj(bok, bok, plotno);
 }
 
 const logo = dekoduj(fs.readFileSync(path.join(APP, 'public', 'logo-pkb.png')));
 
 const cele = [
-  [path.join(APP, 'public', 'ikona-192.png'), 192],
-  [path.join(APP, 'public', 'ikona-512.png'), 512],
-  [path.join(APP, 'src', 'app', 'apple-icon.png'), 180],
-  [path.join(APP, 'src', 'app', 'icon.png'), 96], // favicon (karta przegladarki)
+  // Ikona na ekranie telefonu: znak PKB i podpis ASYSTENT pod nim.
+  [path.join(APP, 'public', 'ikona-192.png'), 192, true],
+  [path.join(APP, 'public', 'ikona-512.png'), 512, true],
+  [path.join(APP, 'src', 'app', 'apple-icon.png'), 180, true],
+  // Favikona w karcie przegladarki: sam znak. Podpis w tej skali bylby plama.
+  [path.join(APP, 'src', 'app', 'icon.png'), 96, false],
 ];
 
-for (const [sciezka, bok] of cele) {
-  const png = zrobIkone(logo, bok);
+for (const [sciezka, bok, zPodpisem] of cele) {
+  const png = zrobIkone(logo, bok, zPodpisem);
   fs.writeFileSync(sciezka, png);
-  console.log(`${bok}x${bok} -> ${sciezka} (${png.length} B)`);
+  console.log(`${bok}x${bok}${zPodpisem ? ' + podpis' : ''} -> ${sciezka} (${png.length} B)`);
 }

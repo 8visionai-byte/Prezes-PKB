@@ -3,7 +3,9 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Asystent Prezesa PKB',
-    short_name: 'Asystent PKB',
+    // To wlasnie ten napis widac pod ikona na ekranie telefonu. Musi byc krotki,
+    // bo dluzsze nazwy telefon i tak ucina wielokropkiem.
+    short_name: 'Asystent',
     description: 'Asystent AI Partnerskich Klubów Biznesu',
     start_url: '/',
     display: 'standalone',
