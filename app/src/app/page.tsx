@@ -29,6 +29,8 @@ function Czat() {
   const [podglad, setPodglad] = useState<string | null>(null);
 
   const dolRef = useRef<HTMLDivElement>(null);
+  const trzymajDol = useRef(true);
+  const [odjechalWGore, setOdjechalWGore] = useState(false);
   const poleRef = useRef<HTMLTextAreaElement>(null);
   const plikRef = useRef<HTMLInputElement>(null);
   const odpytywanie = useRef<number | null>(null);
@@ -71,9 +73,35 @@ function Czat() {
       .catch((e) => setBlad(e instanceof Error ? e.message : String(e)));
   }, [rozmowaZUrl]);
 
+  /**
+   * Przewijanie w dół TYLKO wtedy, gdy prezes i tak jest przy końcu rozmowy.
+   * Wcześniej dopisywana odpowiedź ściągała widok na dół co chwilę i nie dało się
+   * czytać początku briefu, bo tekst uciekał spod oczu.
+   */
   useEffect(() => {
-    dolRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const sprawdz = () => {
+      const odDolu = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      const przyDole = odDolu < 140;
+      trzymajDol.current = przyDole;
+      setOdjechalWGore(!przyDole);
+    };
+    sprawdz();
+    window.addEventListener('scroll', sprawdz, { passive: true });
+    window.addEventListener('resize', sprawdz);
+    return () => {
+      window.removeEventListener('scroll', sprawdz);
+      window.removeEventListener('resize', sprawdz);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (trzymajDol.current) dolRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [wiadomosci, pracuje]);
+
+  const doDolu = () => {
+    trzymajDol.current = true;
+    dolRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  };
 
   useEffect(() => {
     const naPodglad = (e: Event) => setPodglad((e as CustomEvent<string>).detail);
@@ -153,6 +181,8 @@ function Czat() {
     setBlad(null);
     setTekst('');
     if (poleRef.current) poleRef.current.style.height = 'auto';
+    // Wlasne pytanie zawsze pokazujemy: dopiero potem prezes decyduje, gdzie czytac.
+    trzymajDol.current = true;
 
     const doModelu =
       zalaczniki.length > 0
@@ -274,6 +304,19 @@ function Czat() {
                 <button onClick={() => setZalaczniki((z) => z.filter((x) => x !== n))} aria-label={`Odepnij ${n}`} className="text-pkb-muted transition hover:text-pkb-text">×</button>
               </span>
             ))}
+          </div>
+        ) : null}
+
+        {/* Gdy prezes czyta wyzej, a asystent dopisuje nizej: jeden przycisk, zeby wrocic na dol. */}
+        {odjechalWGore ? (
+          <div className="pointer-events-none mb-2 flex justify-center">
+            <button
+              onClick={doDolu}
+              className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-pkb-border bg-pkb-surface/95 px-3 py-1.5 text-[12.5px] text-pkb-muted shadow-lg backdrop-blur transition hover:border-pkb-copper hover:text-pkb-gold"
+            >
+              <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12l7 7 7-7" /></svg>
+              {pracuje ? 'Asystent pisze niżej' : 'Na dół'}
+            </button>
           </div>
         ) : null}
 

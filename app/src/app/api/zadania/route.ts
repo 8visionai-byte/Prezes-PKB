@@ -33,18 +33,33 @@ function bezSciezekSystemowych(tekst: string) {
   return tekst.replace(/\/opt\/data\/profiles\/[^/\s]+\/workspace\/baza-wiedzy\//g, '');
 }
 
-/** Dopisuje gotowa odpowiedz do historii rozmow, zeby nie zginela po zamknieciu aplikacji. */
-async function dopiszDoHistorii(rozmowaId: string, tytul: string, wiadomosci: Wiadomosc[]) {
+/**
+ * Dopisuje rozmowe do historii.
+ *
+ * Wolane DWA razy: raz od razu po wyslaniu pytania (z `pracuje: true`), zeby rozmowa
+ * pojawila sie w panelu bocznym natychmiast, i drugi raz po odpowiedzi agenta.
+ * Wczesniej wpis powstawal dopiero na koncu, wiec przy dluzszej pracy panel wygladal,
+ * jakby nic sie nie dzialo.
+ */
+type WpisHistorii = {
+  id: string;
+  tytul: string;
+  zmieniona: number;
+  wiadomosci: Wiadomosc[];
+  pracuje?: boolean;
+};
+
+async function dopiszDoHistorii(rozmowaId: string, tytul: string, wiadomosci: Wiadomosc[], pracuje = false) {
   try {
     await mkdir(KATALOG, { recursive: true });
-    let wszystkie: { id: string; tytul: string; zmieniona: number; wiadomosci: Wiadomosc[] }[] = [];
+    let wszystkie: WpisHistorii[] = [];
     try {
       const d = JSON.parse(await readFile(PLIK_ROZMOW, 'utf8'));
       if (Array.isArray(d)) wszystkie = d;
     } catch { /* pierwsza rozmowa */ }
 
     const bez = wszystkie.filter((r) => r.id !== rozmowaId);
-    bez.unshift({ id: rozmowaId, tytul, zmieniona: Date.now(), wiadomosci });
+    bez.unshift({ id: rozmowaId, tytul, zmieniona: Date.now(), wiadomosci, pracuje });
     bez.sort((a, b) => b.zmieniona - a.zmieniona);
     await writeFile(PLIK_ROZMOW, JSON.stringify(bez.slice(0, 100), null, 2), 'utf8');
   } catch { /* historia nie moze wywrocic zadania */ }
@@ -126,6 +141,8 @@ async function prowadzZadanie(
   } catch (e) {
     const komunikat = e instanceof Error ? e.message : String(e);
     await zakonczZadanie(idZadania, 'blad', komunikat);
+    // Zdejmujemy znacznik pracy, inaczej kropka w panelu pulsowalaby w nieskonczonosc.
+    await dopiszDoHistorii(rozmowaId, tytul, widoczne, false);
     await wyslijPowiadomienie('Asystent napotkał błąd', komunikat.slice(0, 110), `/?rozmowa=${rozmowaId}`);
   }
 }
@@ -147,6 +164,10 @@ export async function POST(req: NextRequest) {
     const id = `z-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const pytanie = kontekst[kontekst.length - 1]?.tresc ?? '';
     await utworzZadanie({ id, rozmowaId, pytanie });
+
+    // Rozmowa trafia do historii OD RAZU, oznaczona jako w toku. Dzieki temu prezes
+    // widzi ja w panelu bocznym juz w chwili wyslania pytania, a nie dopiero po odpowiedzi.
+    await dopiszDoHistorii(rozmowaId, tytul || 'Nowa rozmowa', widoczne ?? kontekst, true);
 
     // Bez await: zadanie zyje dalej po odeslaniu odpowiedzi HTTP.
     void prowadzZadanie(id, rozmowaId, tytul || 'Nowa rozmowa', kontekst, widoczne ?? kontekst);

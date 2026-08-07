@@ -6,7 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { LogoPKB } from './LogoPKB';
 import { PanelUzytkownika } from './PanelUzytkownika';
 
-type Naglowek = { id: string; tytul: string; zmieniona: number };
+type Naglowek = { id: string; tytul: string; zmieniona: number; pracuje?: boolean };
 
 const I = ({ d }: { d: string }) => (
   <svg viewBox="0 0 24 24" className="size-[17px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -58,6 +58,15 @@ function TrescNawigacji() {
     window.addEventListener('pkb-odswiez', naZmiane);
     return () => window.removeEventListener('pkb-odswiez', naZmiane);
   }, [odswiez]);
+
+  // Gdy asystent nad czyms pracuje, odswiezamy liste co 3 sekundy, zeby kropka
+  // zgasla sama w chwili, gdy odpowiedz bedzie gotowa. Poza tym cisza.
+  const cospracuje = historia.some((r) => r.pracuje);
+  useEffect(() => {
+    if (!cospracuje) return;
+    const tik = window.setInterval(() => void odswiez(), 3000);
+    return () => window.clearInterval(tik);
+  }, [cospracuje, odswiez]);
 
   useEffect(() => setOtwarte(false), [sciezka, aktywnaRozmowa]);
 
@@ -175,7 +184,18 @@ function TrescNawigacji() {
                     }`}
                   >
                     <span className="block truncate text-[13px]">{r.tytul}</span>
-                    <span className="block text-[11px] text-pkb-faint">{kiedy(r.zmieniona)}</span>
+                    {r.pracuje ? (
+                      <span className="flex items-center gap-1.5 text-[11px] text-pkb-gold">
+                        <span className="flex gap-[3px]">
+                          <i className="pkb-kropka size-[4px] rounded-full bg-pkb-gold" />
+                          <i className="pkb-kropka size-[4px] rounded-full bg-pkb-gold [animation-delay:0.18s]" />
+                          <i className="pkb-kropka size-[4px] rounded-full bg-pkb-gold [animation-delay:0.36s]" />
+                        </span>
+                        asystent pracuje
+                      </span>
+                    ) : (
+                      <span className="block text-[11px] text-pkb-faint">{kiedy(r.zmieniona)}</span>
+                    )}
                   </Link>
                   <button
                     onClick={() => void usunRozmowe(r.id)}

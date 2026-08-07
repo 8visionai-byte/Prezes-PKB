@@ -74,7 +74,16 @@ function bitmapa(ctx: CanvasRenderingContext2D, wzor: string[], x: number, y: nu
   });
 }
 
-type Paleta = { czern: string; biel: string; akcent: string; napis: string; miedz: string; sprzet: string };
+type Paleta = {
+  czern: string;
+  biel: string;
+  akcent: string;
+  napis: string;
+  miedz: string;
+  sprzet: string;
+  /** Łapy i nogi. Jasny brąz, bo w ciemnej barwie zlewały się z tłem i nie było widać ruchu. */
+  konczyny: string;
+};
 type Nogi = 'stoi' | 'krokA' | 'krokB' | 'kopie';
 type Lapa = 'dol' | 'przod' | 'gora';
 
@@ -103,25 +112,25 @@ function panda(
   px(7, 4, 1, 1, p.biel);
   px(4, 4, 2, 1, p.czern); // nos
   px(2, 6, 6, 5, p.biel); // tulow
-  px(0, 7, 2, 2, p.czern); // lapa tylna
+  px(0, 7, 2, 2, p.konczyny); // lapa tylna
 
-  if (lapa === 'gora') px(8, 3, 2, 3, p.czern);
-  else if (lapa === 'przod') px(8, 6, 2, 2, p.czern);
-  else px(8, 7, 2, 2, p.czern);
+  if (lapa === 'gora') px(8, 3, 2, 3, p.konczyny);
+  else if (lapa === 'przod') px(8, 6, 2, 2, p.konczyny);
+  else px(8, 7, 2, 2, p.konczyny);
 
   if (nogi === 'kopie') {
-    px(1, 11, 3, 2, p.czern); // noga podporowa
-    px(6, 11, 2, 1, p.czern); // udo wyrzucone do przodu
-    px(8, 11, 2, 1, p.czern); // stopa pod piłką
+    px(1, 11, 3, 2, p.konczyny); // noga podporowa
+    px(6, 11, 2, 1, p.konczyny); // udo wyrzucone do przodu
+    px(8, 11, 2, 1, p.konczyny); // stopa pod piłką
   } else if (nogi === 'krokA') {
-    px(0, 11, 3, 2, p.czern); // nogi szeroko: wyraźny krok
-    px(6, 11, 3, 2, p.czern);
+    px(0, 11, 3, 2, p.konczyny); // nogi szeroko: wyraźny krok
+    px(6, 11, 3, 2, p.konczyny);
   } else if (nogi === 'krokB') {
-    px(2, 11, 3, 2, p.czern); // nogi razem
-    px(5, 11, 3, 2, p.czern);
+    px(2, 11, 3, 2, p.konczyny); // nogi razem
+    px(5, 11, 3, 2, p.konczyny);
   } else {
-    px(2, 11, 2, 2, p.czern);
-    px(6, 11, 2, 2, p.czern);
+    px(2, 11, 2, 2, p.konczyny);
+    px(6, 11, 2, 2, p.konczyny);
   }
 }
 
@@ -147,9 +156,9 @@ function pandaPrzyBiurku(ctx: CanvasRenderingContext2D, x: number, pisze: boolea
   px(7, 16, 1, 1, p.biel);
   px(4, 16, 2, 1, p.czern); // nos
   px(2, 18, 6, 3, p.biel); // tulow, przysiadniety
-  px(8, pisze ? 17 : 18, 2, 1, p.czern); // lapa na klawiaturze
-  px(6, 20, 4, 1, p.czern); // udo poziomo do przodu, pod blat
-  px(6, 21, 2, 1, p.czern); // podudzie i stopa
+  px(8, pisze ? 17 : 18, 2, 1, p.konczyny); // lapa na klawiaturze
+  px(6, 20, 4, 1, p.konczyny); // udo poziomo do przodu, pod blat
+  px(6, 21, 2, 1, p.konczyny); // podudzie i stopa
 }
 
 /**
@@ -192,12 +201,13 @@ export function Pandy() {
     if (!ctx) return;
 
     const p: Paleta = {
-      czern: '#2a2119',
+      czern: '#3d3125', // uszy i obwodki oczu: odrobine jasniej, zeby sylwetka nie ginela w tle
       biel: '#f0e6d8',
       akcent: '#e8b87a',
       napis: '#b87d3f',
       miedz: '#b87d3f',
       sprzet: '#584336', // ciepla szarosc: widoczna na ciemnym tle, ale nie krzyczy
+      konczyny: '#c9a071', // jasny braz: widac, ze pandy przebieraja nogami
     };
     const systemOgranicza = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const statycznie = systemOgranicza || !ruch;

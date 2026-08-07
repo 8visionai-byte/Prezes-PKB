@@ -186,7 +186,18 @@ body {
 @keyframes pkb-puls { 0%, 100% { opacity: 0.35 } 50% { opacity: 1 } }
 .pkb-puls { animation: pkb-puls 1.4s ease-in-out infinite; }
 
+/* Trzy kropki w panelu bocznym: znak, ze asystent wlasnie pracuje nad ta rozmowa. */
+@keyframes pkb-kropka {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0) }
+  30% { opacity: 1; transform: translateY(-2px) }
+}
+.pkb-kropka {
+  display: inline-block;
+  animation: pkb-kropka 1.1s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .pkb-kursor, .pkb-wejscie, .pkb-puls { animation: none; }
+  .pkb-kursor, .pkb-wejscie, .pkb-puls, .pkb-kropka { animation: none; }
   .pkb-wejscie { opacity: 1; transform: none; }
+  .pkb-kropka { opacity: 0.8; }
 }

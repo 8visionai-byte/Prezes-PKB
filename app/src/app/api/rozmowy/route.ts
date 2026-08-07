@@ -37,7 +37,12 @@ export async function GET() {
     const rozmowy = await wczytaj();
     // Do listy nie wysylamy calych rozmow, tylko naglowki - szybciej sie laduje.
     return Response.json({
-      rozmowy: rozmowy.map((r) => ({ id: r.id, tytul: r.tytul, zmieniona: r.zmieniona })),
+      rozmowy: rozmowy.map((r) => ({
+        id: r.id,
+        tytul: r.tytul,
+        zmieniona: r.zmieniona,
+        pracuje: Boolean((r as { pracuje?: boolean }).pracuje),
+      })),
     });
   } catch (e) {
     return Response.json({ error: `Nie udało się odczytać historii: ${e instanceof Error ? e.message : e}` }, { status: 500 });
